@@ -1,7 +1,5 @@
 # Arch Linux 安裝教學
 
-![docs](https://img.shields.io/readthedocs/pip.svg)
-
 ## 說明
 
 [參考自 Arch Wiki](https://wiki.archlinux.org/index.php/installation_guide)
@@ -303,9 +301,8 @@ vi /etc/sudoers
 建立新使用者，並加入 sudo 群組
 
 ```shell
-useradd -m <your-user-name>
+useradd -m -G wheel <your-user-name>
 passwd <your-user-name>
-usermod <your-user-name> -G wheel
 ```
 
 ### 重新啟動進入新系統
