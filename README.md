@@ -9,12 +9,12 @@
 
 ## 安裝
 
-一但你準備好了開機隨身碟，也在 UEFI settings 中使用 UEFI 模式(如果支援建議使用)，並且選擇以 usb 開機後，一般來說你可以毫無意外得進入 Arch ISO 的 shell 畫面中，也就是一個用來安裝 Arch 的 live 系統，會進入到一個有 zsh 的 tty ，我們可以直接在裡頭進行安裝工作。
+一旦你準備好了開機隨身碟，也在 UEFI settings 中使用 UEFI 模式(如果支援建議使用)，並且選擇以 usb 開機後，一般來說你可以毫無意外得進入 Arch ISO 的 shell 畫面中，也就是一個用來安裝 Arch 的 live 系統，會進入到一個有 zsh 的 tty ，我們可以直接在裡頭進行安裝工作。
 如果沒有辦法進入，可能需要停用 secure boot。
 
 以下安裝過程皆假設使用 UEFI
 
-### 驗證起動模式
+### 驗證開機模式
 
 如果你已經啟用 UEFI 模式，Arch ISO 就會被經由 UEFI 啟動，在 UEFI 模式下，會存在目錄 /sys/firmware/efi/efivars ，我們如果想確保目前是以 UEFI 進入系統，便可以列出 efivars 目錄
 
@@ -30,45 +30,75 @@ ls /sys/firmware/efi/efivars
 ping www.google.com
 ```
 
-有線連線方法: ifconfig + dhclient
+如果沒辦法 ping 到，先確保有啟動 dhcpcd
 
 ```shell
-ifconfig <interface> up
-dhclient <interface>
-```
-
-無線連線方法: ifconfig + wpa_supplicant
-
-```shell
-ifconfig <interface> up
-wpa_passphrase <ESSID> <password> >> /etc/wpa_supplicant/wpa_supplicant.conf
-wpa_supplicant -B -i <interface> -c /etc/wpa_supplicant/wpa_supplicant.conf
-dhclient <interface>
-```
-
-另一個好用的 wifi 連線方式是 ```wifi-menu``` 指令
-
-如果 dhcpcd 有在背景執行，就不用執行 dhclient ，啟用方式如下
-
-```
 systemctl start dhcpcd.service
 ```
 
-### 分割磁區
+如果是有線連線，先確保該 interface 有 up
 
-在我們開始分割你的除存區以前我們要先卻認他的分區代號以及它是否被正確讀到，那麼我們可以運行行以下幾個指令
+```shell
+ifconfig <interface> up
+```
+
+如果要列出包含 down 的 interfaces
+
+```shell
+ifconfig -a
+```
+
+如果是無線，可以利用 netctl 的 wifi-menu
+
+```shell
+wifi-menu
+```
+
+然後不管是有線還是無線，確保有透過 DHCP 拿到 ip
+
+```shell
+ifconfig <interface>
+```
+
+如果沒有，手動設定 ip 和 routing table
+
+```shell
+ifconfig <interface> <ip>
+route add <subnet> dev <interface>
+route add default gw <gateway> dev <interface>
+```
+
+如果 DHCP 設定 DNS 太爛或是需要手動設定
+
+```shell
+vim /etc/resolv.conf
+```
+
+在頂部增加
+
+```
+nameserver <dns server>
+```
+
+這是暫時的，會被 dhcpcd 覆蓋，如果需要永久設定可以改成加入 ```/etc/resolv.conf.head ```
+
+如果有程式沒有在查詢失敗時常是下一個 server ，加上 ```options rotate```可能會有幫助
+
+### 分割硬碟分區
+
+在開始分割硬碟區前先確認硬碟有正確讀到以及他的代號
 
 ```shell
 lsblk -a
 ```
 
-上面這個指令可以幫你列出硬碟名，大小以及型態，那麼如果你需要稱加詳細的資料你，可以運行
+上面這個指令可以列出硬碟代號及大小，如果需要更詳細的資料
 
 ```shell
 fdisk -l
 ```
 
-在 linux 中 device nodes 位於 /dev 底下，其中 block devices (儲存裝置們)位於 /dev 或 /dev/block ，在 Arch 為前者，舉例來說透過運行 lsblk 後，我得知我得固態硬碟名稱為 nvme0n1 ，他的 device node 位置便是 /dev/nvme0n1
+在 linux 中 device nodes 位於 /dev 底下，其中 block devices (儲存裝置們)位於 /dev 或 /dev/block ，在 Arch 為前者，舉例來說透過運行 lsblk 後，得知固態硬碟名稱為 nvme0n1 ，他的 device node 位置便是 /dev/nvme0n1
 
 其中常見 block devices 的命名規則如下
 
@@ -80,7 +110,7 @@ NVMe 介面: ```nvme<x>n<y>p<z>``` ，其中 x, y, z 為數字， ```<x>n<y>``` 
  
 MMC: ```mmcblk<x>p<y>``` ，其中 x, y 為數字， x 表示碟， ```p<y>``` 表示分區
 
-在了解以上規則後我們就可以來分割磁區，這裡以最常見的第一顆 SATA 介面硬碟分區名稱 /dev/sda<y> 來做講解，並假設硬碟是空的
+以最常見的第一顆 SATA 介面硬碟分區名稱 /dev/sda<y> 為例，並假設硬碟是空的，開始設定分區
 
 ```shell
 cfdisk /dev/sda
@@ -98,7 +128,7 @@ cfdisk /dev/sda
   **自訂，作者使用全部剩餘空間，類型為 Linux filesystem**
   <br />
 
-通常我們都會在系統上加上 Swap（至換）分區。當然這個不是必須的，如果你覺得你的 RAM 大小足夠，可能覺得不需要這個分區也是可以的。順帶一提，當系統建立完成後想要新增 Swap 分區，或是基於檔案的 swap 也都是可行的。
+通常我們都會在系統上加上 swap 分區，用來儲存部份原本應該在 RAM 上的資訊。當然這個不是必須的，如果你覺得你的 RAM 大小足夠，可能不需要這個分區。順帶一提，當系統建立完成後想要新增 swap 分區，或是基於檔案的 swap 也都是可行的。
 
 ### 格式化磁區
 
@@ -118,17 +148,19 @@ mount /dev/sda1 /mnt/boot
 
 ## 安裝
 
-一般來說我們都是使用 mirrorlist 來取得我們的 kernel 包，那麼你也可以選擇使用 Install Scripts 來安裝若是要使用 scripts 來安裝的話請參考此網址：https://github.com/danny8376/arch_install_script
-若是想要使用 mirrorlist 的話便可以繼續閱讀本文
+一般來說我們都是手動挑選各個需要的 package 來安裝，或者也可以選擇使用別人寫好的腳本，例如：https://github.com/danny8376/arch_install_script
+
+以下為手動安裝
 
 ### 設定 pacman 的 mirrorlist
 
-重新排序 pacman 的鏡像站順序，可以提高下載安裝的速度。
+調整 pacman 啟用的鏡像站，可以提高下載安裝的速度。
 
 ```shell
-pacman -Sy reflector
-reflector --verbose --latest 100 --sort rate --country 'Taiwan' --save /etc/pacman.d/mirrorlist
+vim /etc/pacman.d/mirrorlist
 ```
+
+把非 Taiwan 的註解掉，把 Taiwan 的視所在位置啟用
 
 ### 安裝 base 和 base-devel group packages 
 
@@ -207,7 +239,7 @@ mkinitcpio -p linux
 
 ### 設定 root 密碼
 
-在後面加入一般user之後可以透過```passwd -l root```防止使用root登入，但那會造成無法進入 emergency shell ，先修改密碼就好
+在後面加入一般user之後可以透過```passwd -l root```防止使用root登入，但那會造成無法進入 emergency shell ，鎖定與否自行斟酌，這裡先修改密碼就好
 
 ```shell
 passwd
@@ -226,7 +258,7 @@ grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=grub
 grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
-如果之後開機沒有載入grub而是載入了其他系統的bootloader，先檢查/boot/EFI/Boot/Bootx64.efi是否與/boot/grub/grubx64.efi相同，注意在FAT系列格式下大小寫不拘
+如果之後開機沒有載入grub而是載入了其他系統的bootloader，先檢查 /boot/EFI/Boot/Bootx64.efi 是否與 /boot/grub/grubx64.efi 相同，注意在FAT系列格式下大小寫不拘
 
 ### 更新 repo 資料和套件
 
@@ -244,7 +276,7 @@ pacman -S net-tools wireless_tools wpa_supplicant dialog
 
 其中 wireless_tools wpa_supplicant dialog 只有要用 wifi 才需要， dialog 被 netctl 的 wifi-menu 功能需要
 
-net-tools 提供了 ifconfig route 等指令，如果你會用新的 ip 指令就不需要
+net-tools 提供了 ifconfig route 等指令，如果你會用 iproute2 的 ip 指令就不需要
 
 如果連上網路後沒有得到 ip ，執行 ```systemctl enable dhcpcd.service``` 以及 ```systemctl start dhcpcd.service``` 確保 dhcpcd 有在運行
 
@@ -264,7 +296,7 @@ vi /etc/sudoers
 
 找到該行(大約在第 82 行)，並刪除前方的 # 號
 
-```shell
+```
 # %wheel ALL=(ALL) ALL
 ```
 
@@ -286,25 +318,6 @@ reboot
 
 進入新系統後的網路設定請參考上方
 
-**(建議) 手動設定 DNS**
-
-因筆者曾被預設的 DNS 雷過，建議手動設定
-
-```shell
-vi /etc/resolv.conf
-```
-
-將所有設定前方加上 # 作註解添加以下 DNS (最少 1 種，看個人選擇)
-
-* nameserver 168.95.192.1 #中華電信
-* nameserver 168.95.1.1 #中華電信
-* nameserver 8.8.8.8 #Google
-* nameserver 8.8.4.4 #Google
-
-除此之外，也把上述加入 /etc/resolv.conf.head ，才會被 dhcpcd 採用
-
-如果有程式沒有在查詢失敗時常是下一個 server ，加上 ```options rotate```可能會有幫助
-
 ## 初次進入系統
 
 ### 安裝 CPU 微代碼(Microcode)
@@ -313,7 +326,7 @@ vi /etc/resolv.conf
 
 #### AMD
 
-對於 AMD 處理器，其 Microcode 更新以包在 linux-firmware 中合併進系統中，因此不需要額外動作
+對於 AMD 處理器，其 Microcode 更新以包在 linux-firmware 中，因此不需要額外動作
 
 #### Intel
 
@@ -329,15 +342,13 @@ sudo pacman -S intel-ucode
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
-### 安裝顯示晶片驅動
+### 安裝顯示卡驅動
 
-如果你有顯示卡的話，那我們就要需要安裝顯示晶片驅動，當然這並非必要步驟。
+如果你有顯示卡的話，安裝針對顯示晶片的驅動，效能通常更好
 
-##### 注意: 通常顯示晶片驅動會在安裝或是啟動 xwindows 之前先行安裝完畢以免發生錯誤，若是在已經加載 xorg 的狀況下想要安裝驅動，建議先關閉 xwindows system。
+#### NVIDIA
 
-#### Nvidia
-
-目前較新型的晶片都可以被 arch 官方提供的開源驅動兼容因此我們只需要安裝
+使用 NVIDIA 提供的 nvidia ，如果偏好開源可以跳過，原本預設會使用完全開源的 nouveau
 
 ```shell
 sudo pacman -S nvidia
@@ -345,7 +356,9 @@ sudo pacman -S nvidia
 
 或者是 nvidia-lts
 
-然後我們可以透過其提供的 nvidia-settings 圖形界面程式來調整設定。
+他們含有 kernel module，重新啟動才會載入
+
+需要時可以透過其提供的 nvidia-settings 圖形界面程式來調整設定
 
 #### AMD
 
@@ -363,7 +376,7 @@ sudo pacman -S nvidia
 sudo pacman -S gnome gnome-extra
 ```
 
-使用 systemd 開機啟動 gdm (gnome 預設的desktop manager)及 networkmanager (gnome 使用的網路管理工具)模塊
+使用 systemd 開機啟動 gdm (gnome 預設的desktop manager)及 networkmanager (gnome 使用的網路管理工具)
 
 ```shell
 sudo systemctl enable NetworkManager
@@ -378,7 +391,7 @@ reboot
 
 ### 安裝 aur helper
 
-Arch 使用者軟體倉庫 (AUR) 是由社群推動的使用者軟體庫。它包含了軟體包描述單 (PKGBUILD)，可以用 makepkg 從原始碼編譯軟體包，並透過 Pacman 安裝。 透過 AUR 可以在社群間分享、組織新進軟體包，熱門的軟體包有機會被收錄進 community 軟體庫。這份文件將解釋如何存取、使用 AUR。(本段來自 Arch Wiki)
+Arch 使用者軟體倉庫 (AUR) 是由社群推動的使用者軟體庫。它包含了 PKGBUILD 等 pack 時需要的資訊，可以用 makepkg 打包軟體包，並透過 pacman 安裝。透過 AUR 可以在社群間分享、組織新進軟體包，熱門的軟體包有機會被收錄進 community 軟體庫。這份文件將解釋如何存取、使用 AUR。(本段來自 Arch Wiki)
 
 如果我們想要使用 aur 上的資源，我們需要確認我們已經備妥一個擁有 [makepkg](https://wiki.archlinux.org/index.php/Makepkg)指令的環境。然後我們可以使用 aur helper 來幫我們編譯 aur 上的內容。以下推薦幾個 aur helper
 
@@ -391,38 +404,6 @@ Arch 使用者軟體倉庫 (AUR) 是由社群推動的使用者軟體庫。它�
 ```
 git clone https://aur.archlinux.org/aurman.git
 cd aurman
-makepkg -si
-```
-
-#### yaourt
-
-被標示為 inactive ，不建議使用
-
-```shell
-sudo vim /etc/pacman.conf
-```
-
-找到以下兩行(約在第 93 行)，將前方的 # 刪除
-
-```shell
-#[multilib]
-#Include = /etc/pacman.d/mirrorlist
-```
-
-下載 yaourt 及所需的依賴套件
-
-```shell
-pacman -Sy yajl git
-git clone https://aur.archlinux.org/package-query.git
-git clone https://aur.archlinux.org/yaourt.git
-```
-
-安裝 yaourt
-
-```shell
-cd package-query
-makepkg -si
-cd ../yaourt
 makepkg -si
 ```
 
@@ -448,7 +429,7 @@ XMODIFIERS="@im=fcitx"
 
 開啟 Fcitx Configuration 圖形界面新增 input method
 
-找到 Chewing 並新增
+找到 Chewing (新酷音)並新增
 
 ## 安裝字型
 
@@ -483,7 +464,7 @@ pacman -S ntfs-3g
 
 首先：
 
-Arch 自己的字體渲染實在不能看，在這方面 Ubuntu 做的比較好，那我們直接拿來用
+Arch 自己的字體渲染實在不能看，在這方面 Ubuntu 做的比較好，可以直接拿來用
 
 ```shell
 aurman -S freetype2-ubuntu fontconfig-ubuntu cairo-ubuntu
@@ -494,16 +475,16 @@ aurman -S freetype2-ubuntu fontconfig-ubuntu cairo-ubuntu
 ##### Arc
 
 ```shell
-sudo pacman -S arc-gtk-theme;
+sudo pacman -S arc-gtk-theme
 ```
 
 ##### Numix
 
 ```shell
-sudo pacman -S numix-theme;
+sudo pacman -S numix-theme
 ```
 
-#### 接下來是 icon 系統
+#### 接下來是 icons
 
 ##### Arc-icon
 
@@ -514,13 +495,13 @@ sudo pacman -S arc-icon-theme
 ##### Numix-icon
 
 ```shell
-yaourt -S numix-circle-icon-theme-git
+aurman -S numix-circle-icon-theme-git
 ```
 
 ##### Vivacious Colors icon
 
 ```shell
-yaourt -S vivacious-colors-icon-theme
+aurman -S vivacious-colors-icon-theme
 ```
 
 其他的可以去 gnome-look 網站找來玩玩看：
