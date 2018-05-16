@@ -225,16 +225,6 @@ vi /etc/hosts
 127.0.0.1  <your-pc-name>.localdomain  <your-pc-name>
 ```
 
-### 建立開機映像檔
-
-如果你有修改 mkinitcpio.conf 才需要手動執行，沒有就直接跳過
-
-[mkinitcpio 介紹](<https://wiki.archlinux.org/index.php/Mkinitcpio_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)>)
-
-```shell
-mkinitcpio -p linux
-```
-
 ### 設定 root 密碼
 
 在後面加入一般user之後可以透過```passwd -l root```防止使用root登入，但那會造成無法進入 emergency shell ，鎖定與否自行斟酌，這裡先修改密碼就好
@@ -249,7 +239,7 @@ passwd
 pacman -Sy grub os-prober efibootmgr
 ```
 
-os-prober 可以用以偵測其他系統的存在，並在之後加入 grub 選單中，在 grub-mkconfig 內會自動執行
+os-prober 可以用以偵測其他系統的存在，並在之後加入 grub 選單中，在 grub-mkconfig 內會自動執行，如果只有裝 Arch 就不用安裝
 
 ```shell
 grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=grub
@@ -333,7 +323,7 @@ reboot
 sudo pacman -S intel-ucode
 ```
 
-/usr/bin/grub-mkconfig 可以自動處理載入 microcode 需要的參數，在安装完 intel-ucode 後，可以手動呼叫一次確保有被使用
+grub-mkconfig 時會自動處理載入 microcode 需要的參數，在安装完 intel-ucode 後，可以手動執行一次確保有被使用
 
 ```shell
 sudo grub-mkconfig -o /boot/grub/grub.cfg
@@ -373,24 +363,18 @@ sudo pacman -S nvidia
 sudo pacman -S gnome gnome-extra
 ```
 
-使用 systemd 開機啟動 gdm (gnome 預設的desktop manager)及 networkmanager (gnome 使用的網路管理工具)
+使用 systemd 開機啟動 gdm (gnome 預設的 desktop manager )及 networkmanager ( gnome 使用的網路管理工具)
 
 ```shell
 sudo systemctl enable NetworkManager
 sudo systemctl enable gdm
 ```
 
-### 重新開機
-
-```shell
-reboot
-```
-
 ### 安裝 aur helper
 
-Arch 使用者軟體倉庫 (AUR) 是由社群推動的使用者軟體庫。它包含了 PKGBUILD 等 pack 時需要的資訊，可以用 makepkg 打包軟體包，並透過 pacman 安裝。透過 AUR 可以在社群間分享、組織新進軟體包，熱門的軟體包有機會被收錄進 community 軟體庫。這份文件將解釋如何存取、使用 AUR。(本段來自 Arch Wiki)
+Arch 使用者軟體倉庫 ( AUR ) 是由社群推動的使用者軟體庫。它包含了 PKGBUILD 等打包時需要的資訊，可以用 makepkg 打包軟體包，並透過 pacman 安裝。透過 AUR 可以在社群間分享、組織新進軟體包，熱門的軟體包有機會被收錄進 community 軟體庫。
 
-如果我們想要使用 aur 上的資源，我們需要確認我們已經備妥一個擁有 [makepkg](https://wiki.archlinux.org/index.php/Makepkg)指令的環境。然後我們可以使用 aur helper 來幫我們編譯 aur 上的內容。以下推薦幾個 aur helper
+如果我們想要使用 aur 上的資源，我們需要確認有 [makepkg](https://wiki.archlinux.org/index.php/Makepkg) 及 git 指令。然後我們可以使用 aur helper 來幫我們打包 aur 上的內容。以下推薦 aurman
 
 其他請參閱[arch aur](<https://wiki.archlinux.org/index.php/Arch_User_Repository_(%E6%AD%A3%E9%AB%94%E4%B8%AD%E6%96%87)>) 以及[aur helper](https://wiki.archlinux.org/index.php/AUR_helpers)頁面。
 
@@ -452,20 +436,10 @@ ttf-robot 也是 Google 提供的很潮的字型，適合用來設計 UI
 以及[Linux kernel source](https://github.com/torvalds/linux/blob/master/fs/ntfs/Kconfig)
 
 ```shell
-pacman -S ntfs-3g
+sudo pacman -S ntfs-3g
 ```
 
 ### 桌面美化工程
-
-如果你已經可以完整的使用你的系統後，你可能覺的自己的桌面不太好看，那麼我們來將我們的桌面美化一下吧！！
-
-首先：
-
-Arch 自己的字體渲染實在不能看，在這方面 Ubuntu 做的比較好，可以直接拿來用
-
-```shell
-aurman -S freetype2-ubuntu fontconfig-ubuntu cairo-ubuntu
-```
 
 接下來我們可以安裝 theme，主流的有：
 
