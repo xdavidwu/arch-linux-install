@@ -327,6 +327,14 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 如果你有顯示卡的話，安裝針對顯示晶片的驅動，效能通常更好
 
+在同時有獨顯和內顯的筆電上，如果有獨顯輔助內顯的功能(例如 NVIDIA Optimus)，預設螢幕會顯示內顯輸出
+
+如果 xserver 無法正常顯示，可能可以在 BIOS/UEFI 設定主要使用的顯示卡
+
+如果不在意效能，也可以調一下 xorg config 直接只用內顯
+
+如果要達成混合顯示，參考 [PRIME(通用)](https://wiki.archlinux.org/index.php/PRIME) 或 [Bumblebee(NVIDIA)](https://wiki.archlinux.org/index.php/bumblebee)
+
 #### NVIDIA
 
 使用 NVIDIA 提供的 nvidia ，如果偏好開源可以跳過，原本預設會使用完全開源的 nouveau
