@@ -164,6 +164,8 @@ vim /etc/pacman.d/mirrorlist
 
 如果想要更小的系統你可能不需要```base-devel```
 
+這裡會自動刷新一次 repo db 然後下載最新的套件
+
 ```shell
 pacstrap /mnt base base-devel
 ```
@@ -236,7 +238,7 @@ passwd
 ### 安裝 grub 啟動載入程式
 
 ```shell
-pacman -Sy grub os-prober efibootmgr
+pacman -S grub os-prober efibootmgr
 ```
 
 os-prober 可以用以偵測其他系統的存在，並在之後加入 grub 選單中，在 grub-mkconfig 內會自動執行，如果只有裝 Arch 就不用安裝
@@ -247,14 +249,6 @@ grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
 如果之後開機沒有載入grub而是載入了其他系統的bootloader，先檢查 /boot/EFI/Boot/Bootx64.efi 是否與 /boot/grub/grubx64.efi 相同，注意在FAT系列格式下大小寫不拘
-
-### 更新 repo 資料和套件
-
-就算是最新的 ISO 也有能資料不是最新的
-
-```shell
-pacman -Syu
-```
 
 ### 安裝選用網路工具
 
