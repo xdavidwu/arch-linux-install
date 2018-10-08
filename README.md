@@ -80,7 +80,7 @@ nameserver <dns server>
 
 這是暫時的，會被 dhcpcd 覆蓋，如果需要永久設定可以改成加入 ```/etc/resolv.conf.head ```
 
-如果有程式沒有在查詢失敗時常是下一個 server ，加上 ```options rotate```可能會有幫助
+如果有程式沒有在查詢失敗時嘗試下一個 server ，加上 ```options rotate```可能會有幫助
 
 ### 分割硬碟分區
 
