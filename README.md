@@ -12,6 +12,14 @@
 
 以下安裝過程皆假設使用 UEFI
 
+### HiDPI
+
+如果你的 DPI 高到看不到 Linux kernel console 的字，就 load 一個比較大的 font，目前最大的是 `latarcyrheb-sun32`
+
+```shell
+setfont /usr/share/kbd/consolefonts/latarcyrheb-sun32.psfu.gz
+```
+
 ### 驗證開機模式
 
 如果你已經啟用 UEFI 模式，Arch ISO 就會被經由 UEFI 啟動，在 UEFI 模式下，會存在目錄 /sys/firmware/efi/efivars ，我們如果想確保目前是以 UEFI 進入系統，便可以列出 efivars 目錄
@@ -185,6 +193,26 @@ chroot 是更改系統根目錄的位置
 ```shell
 arch-chroot /mnt
 ```
+
+### HiDPI
+
+如果之後還會繼續用 kernel console，可以讓他自動載入 font
+
+/etc/vconsole.conf:
+```
+FONT=latarcyrheb-sun32
+```
+
+然後讓他在 initramfs 的階段就載入
+
+/etc/mkinitcpio.conf:
+HOOKS 增加 consolefont
+
+```shell
+mkinitcpio -p linux -k <kernel ver in chroot>
+```
+
+注意 pacstrap 裝的 kernel 是 repo 上新的，可能跟正在跑的不同，所以要 `-k` 指定，觀察 `/lib/modules` 得知版本
 
 ### 設定時區
 
