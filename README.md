@@ -4,10 +4,21 @@
 
 針對已經對 GNU/Linux 有基本認識者編寫的輔助性質 cheatsheet
 
+## 先備動作
+
+### Windows
+
+有些機子可能會預設啟用 BitLocker ，但那需要 secure boot ，而且待會需要停用 secure boot ，事先把 BitLocker 停用，才不會進不了 Windows 。如果還是想要保留 secure boot ，參考 [Secure Boot](https://wiki.archlinux.org/index.php/Secure_Boot)
+
+Windows 會把 UEFI/BIOS 的時間設做當地時間，但其他系統通常是用 UTC 時間。創一個 registry `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\TimeZoneInformation\RealTimeIsUniversal` (DWORD) 然後設為 1 ，重新啟動後 Windows 就改成用 UTC 時間了， 64-bit 的 Windows 如果 DWORD 不管用就改用 QWORD 試試
+
+`進階啟動` 可能可以幫你省下狂按按鍵進 UEFI 設定或開機選單的麻煩，注意某些 UEFI/BIOS 會把持續壓住的鍵視為故障而不進設定
+
 ## 安裝
 
 Arch Linux 與其他大多數發行版不同，沒有一個專門的 installer ，只有 bootstrap 工具( pacstrap )。開機進 Arch Linux 的 ISO 後，會進入到一個有 zsh 的 kernel console ，需要手動安裝。
-如果沒有辦法進入，可能需要停用 secure boot。
+
+UEFI 需要停用 secure boot。
 
 以下安裝過程皆假設使用 UEFI ， legacy BIOS 會不同的地方主要只會有安裝 grub 的部份。
 
@@ -253,14 +264,6 @@ echo "<your-pc-name>" > /etc/hostname
 vi /etc/hosts
 ```
 
-在 /etc/hosts 中加入最後一行
-
-```shell
-127.0.0.1  localhost.localdomain       localhost
-::1        localhost.localdomain       localhost
-127.0.0.1  <your-pc-name>.localdomain  <your-pc-name>
-```
-
 ### 設定 root 密碼
 
 在後面加入一般 user 之後可以透過 `passwd -l root` 防止使用 root 登入，但那會造成無法進入 emergency shell ，如果沒有其他救援備案(例如從其他 Linux chroot 進來)鎖定與否自行斟酌，不鎖就設一下密碼
@@ -343,21 +346,19 @@ reboot
 
 對於 mitigations 當前的狀況，可以看 /sys/devices/system/cpu/vulnerabilities/
 
-詳細請參閱：[Microcode](<https://wiki.archlinux.org/index.php/Microcode_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)>)
-
 #### AMD
 
-對於 AMD 處理器，其 Microcode 更新以包在 linux-firmware 中，因此不需要額外動作
+```shell
+sudo pacman -S amd-ucode
+```
 
 #### Intel
-
-對於 Intel 處理器需要另外安裝套件，並且在 bootloader 啟用 Microcode 更新
 
 ```shell
 sudo pacman -S intel-ucode
 ```
 
-grub-mkconfig 時會自動加上載入 microcode 的參數，安裝完 intel-ucode 後，手動執行一次確保有被套用
+grub-mkconfig 時會自動加上載入 microcode 的參數，安裝完 microcode 後，手動執行一次確保有被套用
 
 ```shell
 sudo grub-mkconfig -o /boot/grub/grub.cfg
@@ -367,13 +368,11 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 如果你有顯示卡的話，安裝針對顯示晶片的驅動，效能通常更好
 
-在同時有獨顯和內顯的筆電上，如果有獨顯輔助內顯的功能(例如 NVIDIA Optimus )，預設螢幕會顯示內顯輸出
-
-如果 Xorg 無法正常顯示，可能可以在 BIOS/UEFI 設定主要使用的顯示卡
+在同時有獨顯和內顯的筆電上，如果有獨顯輔助內顯的功能(例如 NVIDIA Optimus )，預設螢幕會顯示內顯輸出，可能可以在 BIOS/UEFI 設定主要使用的顯示卡
 
 如果不在意效能，也可以調一下 Xorg config 直接只用內顯
 
-如果要達成混合顯示，參考 [PRIME(通用)](https://wiki.archlinux.org/index.php/PRIME) 或 [Bumblebee(NVIDIA)](https://wiki.archlinux.org/index.php/bumblebee)
+如果要達成混合顯示，參考 [PRIME](https://wiki.archlinux.org/index.php/PRIME)
 
 #### NVIDIA
 
@@ -395,11 +394,11 @@ sudo pacman -S nvidia
 
 #### AMD
 
-參閱 https://wiki.archlinux.org/index.php/AMD_Catalyst_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)
+參閱 [AMDGPU](https://wiki.archlinux.org/index.php/AMDGPU)
 
 ### 安裝 GUI
 
-安裝你需要的桌面環境/ wm/ Wayland compositor 。選擇依賴於個人喜好故跳過。如果你不知道我在說什麼就不該裝 Arch Linux 。
+安裝你需要的桌面環境/wm/Wayland compositor 。選擇依賴於個人喜好故跳過。如果你不知道我在說什麼就不該裝 Arch Linux 。
 
 ### 安裝 AUR helper
 
@@ -409,7 +408,9 @@ AUR 沒有在管內容有沒有開源，很多都是 binary blobs ，風險自�
 
 如果想要使用 AUR 上的資源，需要確認有安裝 base-devel group 及 git 指令。然後使用 AUR helper 來打包 AUR 上的內容，或是手動用 makepkg 一一打包。
 
-自行參閱[Arch AUR](<https://wiki.archlinux.org/index.php/Arch_User_Repository_(%E6%AD%A3%E9%AB%94%E4%B8%AD%E6%96%87)>) 以及[AUR helper](https://wiki.archlinux.org/index.php/AUR_helpers)頁面。
+如果要手動打包 ，大致上的流程是遞迴找出目標套件和所有他在 AUR 上的 dependencies ，從沒有 depend 到 AUR 套件的開始以 `makepkg -si` 打包回去， `-s` 會用 pacman 安裝缺少的 dependencies， `-i` 是在打包完後自動安裝。
+
+自行參閱 [Arch User Repository](<https://wiki.archlinux.org/index.php/Arch_User_Repository>) 以及 [AUR helpers](https://wiki.archlinux.org/index.php/AUR_helpers) 頁面。
 
 有一個我維護的 AUR 自動打包系統，自動把一些 AUR 套件打包並放在一個 pacman repo ， repo 網址 https://aurbuild.parto.nctu.me/ 如果想要加入套件，先確認 PKGBUILD 是好的，可以在他的 dependency 都滿足的情況下用 devtools 打包後聯絡 xdavidwuph@gmail.com 。如果這些看不懂或不知道怎麼加這個 repo 就不該用這個。部份套件的 PKGBUILD 有經過調整加入一些 compile-time 就決定的 features 。一樣，只提供自動打包，風險自負，如果新的 PKGBUILD 有問題就不一定是最新，我也不一定有興趣研究別人的 bug 。
 
@@ -437,7 +438,7 @@ XMODIFIERS="@im=fcitx"
 
 找到 Chewing (新酷音)並新增
 
-Wayland 的部份據我所知含選字 popup 的 [protocol](https://github.com/swaywm/wlroots/blob/master/protocol/input-method-unstable-v2.xml) 已經有 unstable 版本，但 popup 的部份還沒有已知實做。目前可以透過 Xwayland 用 toolkit im module ( GTK_IM_MODULE, QT_IM_MODULE ) 的方式使用 fcitx ，缺點是依賴於 Xwayland ，需要是使用 GTK 或 QT 才能使用，且因為 Wayland 沒有得到全域座標的方法(這是 by-design ，而且在某些特殊模型下全域座標可能沒意義或不存在)，選字 popup 的位置大多會不正確。
+Wayland 的部份據我所知含選字 popup 的 [protocol](https://github.com/swaywm/wlroots/blob/master/protocol/input-method-unstable-v2.xml) 已經有 unstable 版本，但 popup 的部份還沒有已知實做。目前可以透過 Xwayland 用 toolkit im module ( GTK_IM_MODULE, QT_IM_MODULE ) 的方式使用 fcitx ，缺點是依賴於 Xwayland ，需要是使用 GTK 或 QT 才能使用，且因為 Wayland 沒有取得全域座標的方法(這是 by-design ，而且在某些特殊模型下全域座標可能沒意義或不存在)，選字 popup 的位置大多會不正確。
 
 GNOME Wayland 因為有對 IBus 做特別整合，選字 popup 用 IBus 會正常運作。但應該是個別整合而不是通用的 protocol 。
 
@@ -447,18 +448,17 @@ GNOME Wayland 因為有對 IBus 做特別整合，選字 popup 用 IBus 會正�
 sudo pacman -S noto-fonts noto-fonts-cjk
 ```
 
-noto-fonts 支援大多數 Unicode 的字元
+noto-fonts 是 Google 提供的開放( OFL )字型，支援大多數 Unicode 的字元
 
-noto-fonts-cjk 為 Google 提供的免費的中日韓字型(Chinese Japanese Korean)，建議至少安裝這個
+noto-fonts-cjk 為相同系列的中日韓字型(Chinese Japanese Korean)，建議至少安裝這個
 
 ### NTFS 檔案系統讀寫支援
 
 如果需要對 NTFS 有更好的支援，ntfs-3g 提供了以 FUSE 實做的驅動，以及對 NTFS 進行各種操作的指令
 
-實際上如果只需要存取 NTFS 可以嘗試只用位於 Linux kernel 內的驅動
+實際上如果只需要存取 NTFS 可以嘗試使用位於 Linux kernel 內的驅動
 
-參見[NTFS-3G](https://wiki.archlinux.org/index.php/NTFS-3G)
-以及[Linux kernel source](https://github.com/torvalds/linux/blob/master/fs/ntfs/Kconfig)
+參見 [NTFS-3G](https://wiki.archlinux.org/index.php/NTFS-3G) 以及 [Linux kernel source](https://github.com/torvalds/linux/blob/master/fs/ntfs/Kconfig)
 
 ```shell
 sudo pacman -S ntfs-3g
