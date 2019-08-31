@@ -214,16 +214,22 @@ arch-chroot /mnt
 FONT=latarcyrheb-sun32
 ```
 
-然後讓他在 initramfs 的階段就載入
+加入之後在進入系統時會被 systemd 載入，如果有需要可以讓他在 initramfs 的階段就載入
 
 /etc/mkinitcpio.conf:
 HOOKS 增加 consolefont
 
 ```shell
-mkinitcpio -p linux -k <kernel ver in chroot>
+mkinitcpio -p linux
 ```
 
-注意 pacstrap 裝的 kernel 是 repo 上新的，可能跟正在跑的不同，所以要 `-k` 指定，觀察 `/lib/modules` 得知版本
+又或者日後可以自己編譯 Linux kernel，把 kernel 內建的 font 改為較大的，最大有到 16x32:
+
+```
+Library routines
+ Select compiled-in fonts
+  Terminus 16x32 font (not supported by all drivers)
+```
 
 ### 設定時區
 
@@ -260,10 +266,6 @@ alias sway="env LC_ALL=zh_TW.UTF-8 sway"
 echo "<your-pc-name>" > /etc/hostname
 ```
 
-```shell
-vi /etc/hosts
-```
-
 ### 設定 root 密碼
 
 在後面加入一般 user 之後可以透過 `passwd -l root` 防止使用 root 登入，但那會造成無法進入 emergency shell ，如果沒有其他救援備案(例如從其他 Linux chroot 進來)鎖定與否自行斟酌，不鎖就設一下密碼
@@ -285,7 +287,7 @@ grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=grub
 grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
-如果之後開機沒有載入 grub 而是載入了其他系統的 bootloader ，先檢查 `/boot/EFI/Boot/Bootx64.efi` 是否與 `/boot/grub/grubx64.efi` 相同，注意在 FAT 系列格式下大小寫不拘。不會太舊的 UEFI 實做大多可以手動設定 `EFI/Boot/Bootx64.efi` 以外的路徑可以試試。 `EFI/Boot/Boot<arch>.efi` 是 UEFI 規範的 fallback 路徑。
+如果之後開機沒有載入 grub 而是載入了其他系統的 bootloader ，先檢查 `/boot/EFI/Boot/Bootx64.efi` 是否與 `/boot/grub/grubx64.efi` 相同，注意在 FAT 系列格式下大小寫不拘。不會太舊的 UEFI 實做大多可以手動設定 `EFI/Boot/Bootx64.efi` 以外的路徑可以試試。 `EFI/Boot/Boot<architecture>.efi` 是 UEFI 規範的 fallback 路徑。
 
 ### 安裝選用網路工具
 
@@ -301,7 +303,7 @@ pacman -S wireless_tools wpa_supplicant dialog
 
 ### 建立新使用者
 
-安裝 sudo
+安裝 sudo (包含在 base-devel group 裡面)
 
 ```shell
 pacman -S sudo
@@ -310,7 +312,7 @@ pacman -S sudo
 設定 sudo 群組
 
 ```shell
-vi /etc/sudoers
+visudo
 ```
 
 找到這行，並刪除 # 取消註解，讓 wheel 群組能用 sudo
@@ -386,11 +388,11 @@ sudo pacman -S nvidia
 
 或者是 nvidia-lts
 
-含有 kernel module ， modprobe 或重新啟動以載入
+含有 kernel module ， nvidia-modprobe 或重新啟動以載入
 
 監控檢查狀況用 nvidia-smi 指令
 
-需要時可以透過其提供的 nvidia-settings 圖形界面程式來調整設定
+需要時可以安裝 nvidia-settings 圖形界面程式來調整設定
 
 #### AMD
 
@@ -412,7 +414,7 @@ AUR 沒有在管內容有沒有開源，很多都是 binary blobs ，風險自�
 
 自行參閱 [Arch User Repository](<https://wiki.archlinux.org/index.php/Arch_User_Repository>) 以及 [AUR helpers](https://wiki.archlinux.org/index.php/AUR_helpers) 頁面。
 
-有一個我維護的 AUR 自動打包系統，自動把一些 AUR 套件打包並放在一個 pacman repo ， repo 網址 https://aurbuild.parto.nctu.me/ 如果想要加入套件，先確認 PKGBUILD 是好的，可以在他的 dependency 都滿足的情況下用 devtools 打包後聯絡 xdavidwuph@gmail.com 。如果這些看不懂或不知道怎麼加這個 repo 就不該用這個。部份套件的 PKGBUILD 有經過調整加入一些 compile-time 就決定的 features 。一樣，只提供自動打包，風險自負，如果新的 PKGBUILD 有問題就不一定是最新，我也不一定有興趣研究別人的 bug 。
+有一個我維護的 AUR 自動打包系統，自動把一些 AUR 套件打包並放在一個 pacman repo ， repo 網址 https://aurbuild.parto.nctu.me/ 如果想要加入套件，先確認 PKGBUILD 是好的，可以在他的 dependency 都滿足的情況下用 devtools 打包後聯絡 xdavidwuph@gmail.com 。如果這些看不懂或不知道怎麼加這個 repo 就不該用這個。部份套件的 PKGBUILD 有經過調整加入一些 compile-time 就決定的 features 。只提供自動打包，風險自負，如果新的 PKGBUILD 有問題就不一定是最新，我也不一定有興趣研究別人的 bug 。
 
 ### 安裝中文輸入法 ( fcitx )
 
@@ -426,7 +428,7 @@ sudo pacman -S fcitx-im fcitx-chewing fcitx-configtool
 sudo vi /etc/environment
 ```
 
-在最後方添加以下三行
+在添加以下三行
 
 ```shell
 GTK_IM_MODULE=fcitx
@@ -434,7 +436,7 @@ QT_IM_MODULE=fcitx
 XMODIFIERS="@im=fcitx"
 ```
 
-開啟 Fcitx Configuration 圖形界面新增 input method
+開啟 Fcitx Configuration 圖形界面( fcitx-configtool )新增 input method
 
 找到 Chewing (新酷音)並新增
 
@@ -450,7 +452,7 @@ sudo pacman -S noto-fonts noto-fonts-cjk
 
 noto-fonts 是 Google 提供的開放( OFL )字型，支援大多數 Unicode 的字元
 
-noto-fonts-cjk 為相同系列的中日韓字型(Chinese Japanese Korean)，建議至少安裝這個
+noto-fonts-cjk 為相同系列的中日韓字型( Chinese, Japanese, Korean )，建議至少安裝這個
 
 ### NTFS 檔案系統讀寫支援
 
