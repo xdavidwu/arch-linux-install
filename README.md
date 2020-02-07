@@ -28,11 +28,11 @@ Windows 會把 UEFI/BIOS 的時間設做當地時間，但其他系統通常是�
 
 ## 安裝
 
-Arch Linux 與其他大多數發行版不同，沒有一個專門的 installer，只有 bootstrap 工具 (pacstrap) 。開機進 Arch Linux 的 ISO 後，會進入到一個有 zsh 的 kernel console，需要手動安裝。
+Arch Linux 與其他大多數發行版不同，沒有一個專門的 installer，只有 bootstrap 工具 (pacstrap) 。開機進 Arch Linux 的 ISO 後，會進入到一個有 zsh 的 kernel console，需要手動安裝
 
-UEFI 需要停用 secure boot。
+UEFI 需要停用 secure boot
 
-以下安裝過程皆假設使用 UEFI，legacy BIOS 會不同的地方主要只會有安裝 bootloader 的部份。
+以下安裝過程皆假設使用 UEFI，legacy BIOS 會不同的地方主要只會有安裝 bootloader 的部份
 
 ### HiDPI
 
