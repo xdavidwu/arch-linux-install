@@ -10,21 +10,33 @@
 
 有些機子可能會預設啟用 BitLocker ，但那需要 secure boot ，而且待會需要停用 secure boot ，事先把 BitLocker 停用，才不會進不了 Windows 。如果還是想要保留 secure boot ，參考 [Secure Boot](https://wiki.archlinux.org/index.php/Secure_Boot)
 
-Windows 會把 UEFI/BIOS 的時間設做當地時間，但其他系統通常是用 UTC 時間。創一個 registry `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\TimeZoneInformation\RealTimeIsUniversal` (DWORD) 然後設為 1 ，重新啟動後 Windows 就改成用 UTC 時間了， 64-bit 的 Windows 如果 DWORD 不管用就改用 QWORD 試試
+Windows 會把 UEFI/BIOS 的時間設做當地時間，但其他系統通常是用 UTC 時間。創一個 registry `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\TimeZoneInformation\RealTimeIsUniversal` (DWORD) 然後設為 1，重新啟動後 Windows 就改成用 UTC 時間了
 
-`進階啟動` 可能可以幫你省下狂按按鍵進 UEFI 設定或開機選單的麻煩，注意某些 UEFI/BIOS 會把持續壓住的鍵視為故障而不進設定
+### UEFI Settings
+
+這些功能可能可以幫你省下狂按按鍵進 UEFI 設定或開機選單的麻煩
+
+* Windows 的 `進階啟動` (reboot 時壓住 shift)
+  * 也可以用來選 boot device 暫時充當開機選單
+* GRUB command `fwsetup`
+  * 按 c 進入 command line
+  * 常用可以加成一個 entry
+* systemd-boot `Reboot to firmware`
+  * 以 loader.conf `auto-firmware` 控制，預設是 enabled
+
+注意某些 UEFI/BIOS 會把持續壓住的鍵視為故障而不進設定
 
 ## 安裝
 
-Arch Linux 與其他大多數發行版不同，沒有一個專門的 installer ，只有 bootstrap 工具( pacstrap )。開機進 Arch Linux 的 ISO 後，會進入到一個有 zsh 的 kernel console ，需要手動安裝。
+Arch Linux 與其他大多數發行版不同，沒有一個專門的 installer，只有 bootstrap 工具 (pacstrap) 。開機進 Arch Linux 的 ISO 後，會進入到一個有 zsh 的 kernel console，需要手動安裝。
 
 UEFI 需要停用 secure boot。
 
-以下安裝過程皆假設使用 UEFI ， legacy BIOS 會不同的地方主要只會有安裝 grub 的部份。
+以下安裝過程皆假設使用 UEFI，legacy BIOS 會不同的地方主要只會有安裝 bootloader 的部份。
 
 ### HiDPI
 
-如果你的 DPI 高到看不到 Linux kernel console 的字，就 load 一個比較大的 font，目前最大的是 `latarcyrheb-sun32`
+如果你的 DPI 高到看不到 Linux kernel console 的字，就 load 一個比較大的 font，目前 ISO 內最大的是 `latarcyrheb-sun32`
 
 ```shell
 setfont /usr/share/kbd/consolefonts/latarcyrheb-sun32.psfu.gz
@@ -32,10 +44,10 @@ setfont /usr/share/kbd/consolefonts/latarcyrheb-sun32.psfu.gz
 
 ### 驗證開機模式
 
-在 UEFI 模式下，會存在目錄 /sys/firmware/efi/efivars ，如果想確保目前是在 UEFI 下，可以用他來確認
+在 UEFI 模式下，會存在目錄 /sys/firmware/efi ，如果想確保目前是在 UEFI 下，可以用他來確認
 
 ```shell
-ls /sys/firmware/efi/efivars
+ls /sys/firmware/efi
 ```
 
 ### 設定網路連線
@@ -84,13 +96,7 @@ ip r add <subnet> dev <interface>
 ip r add default via <gateway> dev <interface>
 ```
 
-如果 DHCP 設定 DNS 太爛或是需要手動設定
-
-```shell
-vi /etc/resolv.conf
-```
-
-增加
+如果 DHCP 設定 DNS 太爛或是需要手動設定，於 /etc/resolv.conf 增加
 
 ```
 nameserver <dns server>
@@ -126,7 +132,7 @@ NVMe 介面: `nvme<x>n<y>p<z>` ，其中 x, y, z 為數字， `nvme<x>n<y>` 表�
  
 MMC: `mmcblk<x>p<y>` ，其中 x, y 為數字， x 表示碟， `p<y>` 表示分區
 
-以最常見的第一顆 SATA 介面硬碟分區名稱 /dev/sda<y> 為例，並假設硬碟是空的，開始設定分區
+以第一顆 SATA 介面硬碟分區名稱 /dev/sda<y> 為例，並假設硬碟是空的，開始設定分區
 
 ```shell
 cfdisk /dev/sda
@@ -135,7 +141,7 @@ cfdisk /dev/sda
 * /dev/sda1: /boot
   * **空間通常建議 512MB，類型為 EFI System**
   * (若有其他系統的 EFI 分區可以直接沿用，且不要格式化，格式化你其他系統的 bootloader 就沒了)
-  * 我的系統上 Windows 的 bootloader 再加上 Dell 的一些 recovery system 再加上 grub 和 Arch Linux 的 kernel 和 initramfs 用了快 150MB 供參考
+  * 我的系統上 Windows 的 bootloader 再加上 Dell 的一些 recovery system 再加上 grub 和 Arch Linux 的 kernel 和 initramfs 用了快 150MB
   * 我會最少也弄個 256MB 省麻煩
 
 * /dev/sda2: Swap
@@ -145,7 +151,7 @@ cfdisk /dev/sda
 * /dev/sda3: /
   * **自訂，可以使用全部剩餘空間，類型為 Linux filesystem**
 
-如果需要調整現有分區的大小，切記要先 resize filesystem ( ext 系列是 resize2fs )再去 resize partition。如果怕出錯，可以用 gparted 懶人工具。Arch Linux live 環境通常會塞不下 gparted (需要 X11 )，可以改用 gparted 官方自己的 live system。
+如果需要調整現有分區的大小，切記要先 resize filesystem (ext 系列是 resize2fs) 再去 resize partition。如果怕出錯，可以用 gparted GUI 懶人工具。Arch Linux live 環境通常會塞不下 gparted ，可以改用 gparted 官方自己的 live system。
 
 ### 格式化磁區
 
@@ -171,15 +177,11 @@ mount /dev/sda1 /mnt/boot
 
 ### 設定 pacman 的 mirrorlist
 
-調整 pacman 啟用的鏡像站，提高下載安裝的速度。
+調整 pacman 啟用的鏡像站，提高下載安裝的速度
 
-```shell
-vi /etc/pacman.d/mirrorlist
-```
+於 /etc/pacman.d/mirrorlist 把非 Taiwan 的註解或刪掉，把 Taiwan 的視所在位置排序
 
-把非 Taiwan 的註解或刪掉，把 Taiwan 的視所在位置排序
-
-### 安裝 base 和 base-devel group packages 
+### 安裝 base metapackage 和 base-devel group
 
 如果想要更小的系統不寫程式可能不需要 `base-devel`
 
@@ -189,9 +191,11 @@ vi /etc/pacman.d/mirrorlist
 pacstrap /mnt base base-devel
 ```
 
+注意 base 已經不再是 group 而是 metapackage，如果想要到非常精簡建議 `pacman -Si base` 看看他 depends 哪些自己過濾裝
+
 ### 建立 fstab
 
-接下來我們要生成一個 fstab 文件，其中 -U 代表透過 UUID 來定義，就算 device nodes 的標籤改變了也能順利使用，他定義了各個分區如何掛載於系統
+生成 fstab 文件，其中 -U 代表透過 UUID 來定義，就算 device nodes 的標籤改變了也能順利使用，他定義了各個分區如何掛載於系統
 
 ```shell
 genfstab -U /mnt >> /mnt/etc/fstab
@@ -199,7 +203,7 @@ genfstab -U /mnt >> /mnt/etc/fstab
 
 ### chroot 至新系統
 
-chroot 是更改系統根目錄的位置
+chroot 是以其他目錄作為系統根目錄執行指令的概念
 
 ```shell
 arch-chroot /mnt
@@ -210,6 +214,7 @@ arch-chroot /mnt
 如果之後還會繼續用 kernel console，可以讓他自動載入 font
 
 /etc/vconsole.conf:
+
 ```
 FONT=latarcyrheb-sun32
 ```
@@ -217,11 +222,8 @@ FONT=latarcyrheb-sun32
 加入之後在進入系統時會被 systemd 載入，如果有需要可以讓他在 initramfs 的階段就載入
 
 /etc/mkinitcpio.conf:
-HOOKS 增加 consolefont
 
-```shell
-mkinitcpio -p linux
-```
+HOOKS 增加 consolefont 後執行 `mkinitcpio -p linux`
 
 又或者日後可以自己編譯 Linux kernel，把 kernel 內建的 font 改為較大的，最大有到 16x32:
 
@@ -231,10 +233,12 @@ Library routines
   Terminus 16x32 font (not supported by all drivers)
 ```
 
+如果喜歡 [Terminus](http://terminus-font.sourceforge.net/)，有 terminus-font package 可以提供 console font，命名規則為 ter-<mapping><size><style>，其中 mapping 以 v 最廣，size 最大 32，style 有 n (normal) 和 b (bold)，推薦 ter-v32b，Terminus 有不少字有官方變種，有各種變種組合，個人推薦 ll2+td1，AUR 套件 terminus-font-ll2-td1
+
 ### 設定時區
 
 ```shell
-ln -sf /usr/share/zoneinfo/Asia/Taipei /etc/localtime
+timedatectl set-timezone Asia/Taipei
 ```
 
 ### 設定語言環境
@@ -249,12 +253,12 @@ locale-gen
 設定預設為 `zh_TW.UTF-8`
 
 ```shell
-echo "LANG=zh_TW.UTF-8" > /etc/locale.conf
+localectl set-locale zh_TW.UTF-8
 ```
 
 在 kernel console 底下無法直接顯示中文，使用 `zh_TW.UTF-8` 會出現一堆方塊，如果常直接在 kernel console 下做事可以在當下 `export LC_ALL="C"` 暫時修改，也可以只在 xinitrc 之類的地方設定為 `zh_TW.UTF-8`
 
-如果不是用 xinit (例如 Wayland)，可以善用 shell 的 alias ，寫進 shell 的 config ，例如：
+如果不是用 xinit (例如 Wayland)，可以善用 shell 的 alias，寫進 shell 的 config，例如：
 
 ```shell
 alias sway="env LC_ALL=zh_TW.UTF-8 sway"
@@ -263,43 +267,188 @@ alias sway="env LC_ALL=zh_TW.UTF-8 sway"
 ### 設定電腦名稱
 
 ```shell
-echo "<your-pc-name>" > /etc/hostname
+hostnamectl set-hostname <your-pc-name>
 ```
 
 ### 設定 root 密碼
 
-在後面加入一般 user 之後可以透過 `passwd -l root` 防止使用 root 登入，但那會造成無法進入 emergency shell ，如果沒有其他救援備案(例如從其他 Linux chroot 進來)鎖定與否自行斟酌，不鎖就設一下密碼
+在後面加入一般 user 之後可以透過 `passwd -l root` 防止使用 root 登入，但那會造成無法進入 emergency shell ，如果沒有其他救援備案 (例如從其他 Linux chroot 進來，或者 kernel cmdline 用 init=/bin/sh 繞過) 鎖定與否自行斟酌，不鎖就設一下密碼
 
 ```shell
 passwd
 ```
 
-### 安裝 grub 啟動載入程式
+### 安裝 bootloader
+
+這裡介紹 systemd-boot 和 GRUB
+
+* GRUB
+  * 顏值高，可 theme，功能多，支援執行多種 OS kernel
+  * 相較之下偏大 (x86-\_64-efi) EFI binary + modules 約 3.3M
+  * Arch 套件不小 (約 32M when installed)
+  * 實測在 4k 螢幕上輸出微慢
+
+* systemd-boot
+  * Arch 上就在 systemd package 裡，裝了 systemd 就順便送你
+  * 功能少，只能 load EFI binary
+    * Linux kernel 需要 CONFIG_EFI_STUB 支援以 EFI binary 載入 (Arch `linux` 有開)
+    * entries 要自己寫或生成 unified kernel image
+    * 本文採用自己寫 entries，就不用每次更新 kernel 重新生成 unified image
+  * 輸出直接交給 EFI，不能 font 或用背景圖
+    * HiDPI 上字小或字醜二選一
+    * 但通常跟 UEFI 自己的 boot menu 很搭
+  * 很小，EFI binary 92K
+  * 預設就會自己抓 Windows, OS X 的 bootloader 長出 entries
+  * 預設自己會長出 `Reboot to firmware`
+
+
+如果之後開機載入了其他系統的 bootloader ，先檢查 `/boot/EFI/Boot/Bootx64.efi` 是否與 `/boot/EFI/systemd/systemd-bootx64.efi` 或 `/boot/EFI/grub/grubx64.efi` 相同，注意在 FAT 系列格式下大小寫不拘。不會太舊的 UEFI 實做大多可以手動設定 `EFI/Boot/Bootx64.efi` 以外的路徑可以試試。 `EFI/Boot/Boot<architecture>.efi` 是 UEFI 規範的 fallback 路徑
+
+#### systemd-boot
+
+```shell
+bootctl install
+```
+
+注意 `/boot/EFI/Boot/Bootx64.efi` 會被覆寫
+
+##### 設定
+
+main config `/boot/loader/loader.conf` 常見 options:
+
+```
+timeout <timeout-seconds>
+default <default entry name>
+console-mode <0,1,2...,auto,max,keep (UEFI console resolution, 0: 80x25, 1:80x50, 2...: non-standard)>
+```
+
+entry definition `/boot/loader/entries/<name>.conf`:
+
+```
+title <title>
+linux <EFI stub kernel path>
+initrd <initramfs path>
+options <kernel cmdline>
+```
+
+##### 範例
+
+main config `/boot/loader/loader.conf`:
+
+```
+timeout 3
+default arch
+console-mode 2
+```
+
+entry definition `/boot/loader/entries/arch.conf`:
+
+```
+title Arch Linux
+linux /vmlinuz-linux
+initrd /initramfs-linux.img
+options root=UUID=<root UUID>
+```
+
+entry definition `/boot/loader/entries/arch-fallback.conf`:
+
+```
+title Arch Linux, fallback initramfs
+linux /vmlinuz-linux
+initrd /initramfs-linux-fallback.img
+options root=UUID=<root UUID>
+```
+
+#### GRUB
 
 ```shell
 pacman -S grub os-prober efibootmgr
 ```
 
-os-prober 可以用以偵測其他系統(如 Windows )，並加入 grub 選單中，在 grub-mkconfig 內會自動執行，如果只有裝 Arch 就不用安裝
+os-prober 可以用以偵測其他系統 (如 Windows)，並加入 grub 選單中，在 grub-mkconfig 內會自動執行，如果只有裝 Arch 就不用安裝
 
 ```shell
 grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=grub
 grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
-如果之後開機沒有載入 grub 而是載入了其他系統的 bootloader ，先檢查 `/boot/EFI/Boot/Bootx64.efi` 是否與 `/boot/grub/grubx64.efi` 相同，注意在 FAT 系列格式下大小寫不拘。不會太舊的 UEFI 實做大多可以手動設定 `EFI/Boot/Bootx64.efi` 以外的路徑可以試試。 `EFI/Boot/Boot<architecture>.efi` 是 UEFI 規範的 fallback 路徑。
+### 安裝 Wi-Fi 連線工具
 
-### 安裝選用網路工具
+#### netctl wifi-menu
+
+傳統 Arch 味 wifi-menu
 
 ```shell
-pacman -S wireless_tools wpa_supplicant dialog
+pacman -S wpa_supplicant dialog
 ```
 
-其中 wireless_tools wpa_supplicant dialog 只有要用 wifi 才需要， dialog 被 netctl 的 wifi-menu 功能需要
+dialog 被 netctl 的 wifi-menu 功能需要
+
+#### iwd
+
+大量利用 kernel crypto API 的輕量 wireless daemon，自行編譯 kernel 者注意相關 configuration (如果有缺在 log 會有提示)
+
+內建 DHCP client 功能
+
+```shell
+pacman -S iwd
+```
+
+有 daemon 要先起來，systemd unit iwd.service
+
+預設會自己處理 interface，創成 wlan0 這種 naming，可以在 daemon 加參數避免，enable 的話注意他起來時 interface 有沒有先出現
+
+連線方法: iwctl 進入 interactive command line
+
+掃 AP:
+
+```iwctl
+station <interface> scan
+station <interface> get-networks
+```
+
+連 AP:
+
+```iwctl
+station <interface> connect <ssid>
+```
+
+### 其餘網路工具
 
 如果你不會用 iproute2 的 ip 指令， net-tools 提供了 ifconfig route 等舊指令
 
-如果之後沒辦法連上網路，設定方面參考上面。如果也是使用 dhcpcd ，記得 enable 他的 service 。
+如果之後沒辦法連上網路，設定方面參考上面。如果也是使用 dhcpcd ，記得 enable 他的 service
+
+### 安裝 CPU Microcode
+
+安裝 intel-ucode 或 amd-ucode 套件
+
+有些人可能會想跳過省下 Intel 的一堆漏洞的 mitigations 造成的 performance penalty
+
+對於 mitigations 當前的狀況，可以看 /sys/devices/system/cpu/vulnerabilities/
+
+如果要再進一步關 mitigations，在 kernel cmdline 增加 mitigations=off
+
+#### cmdline 調整
+
+* systemd-boot
+
+修改 entries 的 options
+
+* GRUB
+
+修改 /etc/default/grub 的 GRUB_CMDLINE_LINUX_DEFAULT 然後 `grub-mkconfig -o /boot/grub/grub.cfg`
+
+#### 套用 microcode
+
+* systemd-boot
+
+在 entries 多加一項 initrd 為 `/boot/intel-ucode.img` 或 `/boot/amd-ucode.img`
+
+* GRUB
+
+grub-mkconfig 時會自動加上載入 microcode 的參數，安裝完 microcode 後，手動執行一次 `grub-mkconfig -o /boot/grub/grub.cfg`
+
 
 ### 建立新使用者
 
@@ -338,39 +487,13 @@ reboot
 
 ## 初次進入系統
 
-以下大多可以在 chroot 時就進行，但直接進系統比較會省麻煩
-
-### 安裝 CPU Microcode
-
-有些人可能會想跳過省下 Intel 的一堆漏洞的 mitigations 造成的 performance penalty
-
-如果要再進一步關 mitigations，在 /etc/default/grub 的 GRUB_CMDLINE_LINUX_DEFAULT 多加一項 mitigations=off 然後 grub-mkconfig 一次
-
-對於 mitigations 當前的狀況，可以看 /sys/devices/system/cpu/vulnerabilities/
-
-#### AMD
-
-```shell
-sudo pacman -S amd-ucode
-```
-
-#### Intel
-
-```shell
-sudo pacman -S intel-ucode
-```
-
-grub-mkconfig 時會自動加上載入 microcode 的參數，安裝完 microcode 後，手動執行一次確保有被套用
-
-```shell
-sudo grub-mkconfig -o /boot/grub/grub.cfg
-```
+以下大多可以在 chroot 時就進行，但直接進系統比較會省麻煩，才不會有比如說哪個 kernel module 裝下去 vermagic 不符用不了
 
 ### 安裝顯示卡驅動
 
 如果你有顯示卡的話，安裝針對顯示晶片的驅動，效能通常更好
 
-在同時有獨顯和內顯的筆電上，如果有獨顯輔助內顯的功能(例如 NVIDIA Optimus )，預設螢幕會顯示內顯輸出，可能可以在 BIOS/UEFI 設定主要使用的顯示卡
+在同時有獨顯和內顯的筆電上，如果有獨顯輔助內顯的功能 (例如 NVIDIA Optimus) ，預設螢幕會顯示內顯輸出，可能可以在 BIOS/UEFI 設定主要使用的顯示卡
 
 如果不在意效能，也可以調一下 Xorg config 直接只用內顯
 
@@ -382,11 +505,7 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 注意 nvidia 沒有實做 GBM 只有實做自家出品的 EGLStreams ，基於 wlroots 的 Wayland compositors 不支援
 
-```shell
-sudo pacman -S nvidia
-```
-
-或者是 nvidia-lts
+安裝套件 nvidia 或者是 nvidia-lts
 
 含有 kernel module ， nvidia-modprobe 或重新啟動以載入
 
@@ -400,23 +519,23 @@ sudo pacman -S nvidia
 
 ### 安裝 GUI
 
-安裝你需要的桌面環境/wm/Wayland compositor 。選擇依賴於個人喜好故跳過。如果你不知道我在說什麼就不該裝 Arch Linux 。
+安裝你需要的桌面環境/wm/Wayland compositor。選擇依賴於個人喜好故跳過。如果你不知道我在說什麼就不該裝 Arch Linux
 
 ### 安裝 AUR helper
 
-AUR 是由社群推動的使用者軟體庫，包含了 PKGBUILD 等打包時需要的腳本，可以用 makepkg 打包軟體包，並透過 pacman 安裝。透過 AUR 可以在社群間分享、建構新軟體包，熱門的軟體有機會被收錄進 community 軟體庫。
+AUR 是由社群推動的使用者軟體庫，包含了 PKGBUILD 等打包時需要的腳本，可以用 makepkg 打包軟體包，並透過 pacman 安裝。透過 AUR 可以在社群間分享、建構新軟體包，熱門的軟體有機會被收錄進 community 軟體庫
 
-AUR 沒有在管內容有沒有開源，很多都是 binary blobs ，風險自負，建議養成 review PKGBUILD 的習慣
+AUR 沒有在管內容有沒有開源，很多都是 binary blobs，風險自負，建議養成 review PKGBUILD 的習慣
 
-如果想要使用 AUR 上的資源，需要確認有安裝 base-devel group 及 git 指令。然後使用 AUR helper 來打包 AUR 上的內容，或是手動用 makepkg 一一打包。
+如果想要使用 AUR 上的資源，需要確認有安裝 base metapackage, base-devel group 及 git。然後使用 AUR helper 來打包 AUR 上的內容，或是手動用 makepkg 一一打包
 
-如果要手動打包 ，大致上的流程是遞迴找出目標套件和所有他在 AUR 上的 dependencies ，從沒有 depend 到 AUR 套件的開始以 `makepkg -si` 打包回去， `-s` 會用 pacman 安裝缺少的 dependencies， `-i` 是在打包完後自動安裝。
+如果要手動打包 ，大致上的流程是遞迴找出目標套件和所有他在 AUR 上的 dependencies，從沒有 depend 到 AUR 套件的開始以 `makepkg -si` 打包回去，`-s` 會用 pacman 安裝缺少的 dependencies，`-i` 是在打包完後自動安裝
 
-自行參閱 [Arch User Repository](<https://wiki.archlinux.org/index.php/Arch_User_Repository>) 以及 [AUR helpers](https://wiki.archlinux.org/index.php/AUR_helpers) 頁面。
+自行參閱 [Arch User Repository](<https://wiki.archlinux.org/index.php/Arch_User_Repository>) 以及 [AUR helpers](https://wiki.archlinux.org/index.php/AUR_helpers) 頁面
 
-有一個我維護的 AUR 自動打包系統，自動把一些 AUR 套件打包並放在一個 pacman repo ， repo 網址 https://aurbuild.parto.nctu.me/ 如果想要加入套件，先確認 PKGBUILD 是好的，可以在他的 dependency 都滿足的情況下用 devtools 打包後聯絡 xdavidwuph@gmail.com 。如果這些看不懂或不知道怎麼加這個 repo 就不該用這個。部份套件的 PKGBUILD 有經過調整加入一些 compile-time 就決定的 features 。只提供自動打包，風險自負，如果新的 PKGBUILD 有問題就不一定是最新，我也不一定有興趣研究別人的 bug 。
+有一個我維護的 AUR 自動打包系統，自動把一些 AUR 套件打包並放在一個 pacman repo ， repo 網址 https://aurbuild.parto.nctu.me/ 如果想要加入套件，先確認 PKGBUILD 是好的，可以在他的 dependency 都滿足的情況下用 devtools 打包後聯絡 xdavidwuph@gmail.com 。如果這些看不懂或不知道怎麼加這個 repo 就不該用這個。部份套件的 PKGBUILD 有經過調整加入一些 compile-time 就決定的 features 。只提供自動打包，風險自負，如果新的 PKGBUILD 有問題就不一定是最新，我也不一定有興趣研究別人的 bug 
 
-### 安裝中文輸入法 ( fcitx )
+### 安裝中文輸入法 (fcitx)
 
 安裝 fcitx
 
@@ -424,11 +543,7 @@ AUR 沒有在管內容有沒有開源，很多都是 binary blobs ，風險自�
 sudo pacman -S fcitx-im fcitx-chewing fcitx-configtool
 ```
 
-```shell
-sudo vi /etc/environment
-```
-
-在添加以下三行
+在 /etc/environment 添加以下三行
 
 ```shell
 GTK_IM_MODULE=fcitx
@@ -436,13 +551,15 @@ QT_IM_MODULE=fcitx
 XMODIFIERS="@im=fcitx"
 ```
 
-開啟 Fcitx Configuration 圖形界面( fcitx-configtool )新增 input method
+想辦法讓你的 GUI 自動執行 fcitx-autostart
 
-找到 Chewing (新酷音)並新增
+開啟 Fcitx Configuration 圖形界面 (fcitx-configtool) 新增 input method
 
-Wayland 的部份據我所知含選字 popup 的 [protocol](https://github.com/swaywm/wlroots/blob/master/protocol/input-method-unstable-v2.xml) 已經有 unstable 版本，但 popup 的部份還沒有已知實做。目前可以透過 Xwayland 用 toolkit im module ( GTK_IM_MODULE, QT_IM_MODULE ) 的方式使用 fcitx ，缺點是依賴於 Xwayland ，需要是使用 GTK 或 QT 才能使用，且因為 Wayland 沒有取得全域座標的方法(這是 by-design ，而且在某些特殊模型下全域座標可能沒意義或不存在)，選字 popup 的位置大多會不正確。
+找到 Chewing (新酷音) 並新增
 
-GNOME Wayland 因為有對 IBus 做特別整合，選字 popup 用 IBus 會正常運作。但應該是個別整合而不是通用的 protocol 。
+Wayland 的部份輸入法 [protocol](https://github.com/swaywm/wlroots/blob/master/protocol/input-method-unstable-v2.xml) 已經有 unstable 版本，但還沒有已知的完全實做。目前可以透過 Xwayland 用 toolkit im module (GTK_IM_MODULE, QT_IM_MODULE) 的方式使用 fcitx ，缺點是依賴於 Xwayland ，需要是使用 GTK 或 QT 才能使用，且因為 Wayland 沒有取得畫面全域座標的方法 (這是 by-design，而且在某些特殊模型下全域座標可能沒意義或不存在) ，選字 popup 的位置大多會不正確
+
+GNOME Wayland 因為 gnome-shell 有對 IBus 做選字 popup，IBus 會正常運作。但是是個別整合而不是通用的 protocol
 
 ## 安裝字型
 
@@ -450,9 +567,9 @@ GNOME Wayland 因為有對 IBus 做特別整合，選字 popup 用 IBus 會正�
 sudo pacman -S noto-fonts noto-fonts-cjk
 ```
 
-noto-fonts 是 Google 提供的開放( OFL )字型，支援大多數 Unicode 的字元
+noto-fonts 是 Google 提供的開放 (OFL) 字型，支援大多數 Unicode 的字元
 
-noto-fonts-cjk 為相同系列的中日韓字型( Chinese, Japanese, Korean )，建議至少安裝這個
+noto-fonts-cjk 為相同系列的中日韓字型 (Chinese, Japanese, Korean)，建議至少安裝這個
 
 ### NTFS 檔案系統讀寫支援
 
