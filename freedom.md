@@ -18,7 +18,7 @@ linux-firmware 裡也很多閉源的 firmware ，官方 repo 內還有像 flash 
 
 ## Parabola [libre]
 
-Parabola 的 [libre] 套件庫包含自由化(例如移除不自由的部份)的套件，裡面都是完全開源且 license 自由的，雖然我們可能無法直接使用 Parabola ，
+Parabola 的 [libre] 套件庫包含自由化 (例如移除不自由的部份) 的套件，裡面都是完全開源且 license 自由的，雖然我們可能無法直接使用 Parabola ，
 但可以從他的 [libre] 來裝一些自由的替代方案，因為 Parabola 是基於 Arch Linux 的，甚至他們的很多套件庫直接是刪除 blacklist 後的 
 Arch Linux 相對套件庫，把 [libre] 的東西拿來用不怎麼會出問題
 
@@ -34,6 +34,8 @@ Server = https://mirror.fsf.org/parabola/$repo/os/$arch
 然後小心的 pacman -Syu 一下，不要更新到任何東西，先看看他會動到什麼
 
 例如 linux-libre replaces linux, linux-firmware-libre replaces linux-firmware ，但我因為網卡需要閉源 firmware 才能動，所以我把他們都加進 pacman.conf 的 IgnorePkg
+
+pacman-mirrorlist 在 [libre] 內是 Parabola 的 mirrorlist, 記得 IgnorePkg 掉
 
 確認自己都處理好要留的東西再更新
 
