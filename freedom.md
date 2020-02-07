@@ -39,6 +39,6 @@ pacman-mirrorlist 在 [libre] 內是 Parabola 的 mirrorlist, 記得 IgnorePkg �
 
 確認自己都處理好要留的東西再更新
 
-小心不要裝到 your-freedom 套件，那是刪除 blacklist 套件用的(透過 conflicts )
+小心不要裝到 your-freedom 套件，那是刪除 blacklist 套件用的 (透過 conflicts)
 
 absolutely-proprietary 不會判斷套件的來源，所以就算你裝了 [libre] 裡面同名的自由版，還是會算成不自由
