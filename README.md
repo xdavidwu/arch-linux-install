@@ -284,7 +284,7 @@ passwd
 
 * GRUB
   * 顏值高，可 theme，功能多，支援執行多種 OS kernel
-  * 相較之下偏大 (x86-\_64-efi) EFI binary + modules 約 3.3M
+  * 相較之下偏大 (x86\_64-efi) EFI binary + modules 約 3.3M
   * Arch 套件不小 (約 32M when installed)
   * 實測在 4k 螢幕上輸出微慢
 
