@@ -533,7 +533,7 @@ AUR 沒有在管內容有沒有開源，很多都是 binary blobs，風險自負
 
 自行參閱 [Arch User Repository](<https://wiki.archlinux.org/index.php/Arch_User_Repository>) 以及 [AUR helpers](https://wiki.archlinux.org/index.php/AUR_helpers) 頁面
 
-有一個我維護的 AUR 自動打包系統，自動把一些 AUR 套件打包並放在一個 pacman repo ， repo 網址 https://aurbuild.parto.nctu.me/ 如果想要加入套件，先確認 PKGBUILD 是好的，可以在他的 dependency 都滿足的情況下用 devtools 打包後聯絡 xdavidwuph@gmail.com 。如果這些看不懂或不知道怎麼加這個 repo 就不該用這個。部份套件的 PKGBUILD 有經過調整加入一些 compile-time 就決定的 features 。只提供自動打包，風險自負，如果新的 PKGBUILD 有問題就不一定是最新，我也不一定有興趣研究別人的 bug 
+有一個我維護的 AUR 自動打包系統，自動把一些 AUR 套件打包並放在一個 pacman repo ， repo 網址 https://aurbuild.eglo.ga/ 如果想要加入套件，先確認 PKGBUILD 是好的，可以在他的 dependency 都滿足的情況下用 devtools 打包後聯絡 xdavidwuph@gmail.com 。如果這些看不懂或不知道怎麼加這個 repo 就不該用這個。部份套件的 PKGBUILD 有經過調整加入一些 compile-time 就決定的 features 。只提供自動打包，風險自負，如果新的 PKGBUILD 有問題就不一定是最新，我也不一定有興趣研究別人的 bug 
 
 ### 安裝中文輸入法 (fcitx)
 
