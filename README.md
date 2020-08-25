@@ -437,7 +437,7 @@ station <interface> connect <ssid>
 
 * GRUB
 
-修改 /etc/default/grub 的 GRUB_CMDLINE_LINUX_DEFAULT 然後 `grub-mkconfig -o /boot/grub/grub.cfg`
+修改 /etc/default/grub 的 GRUB\_CMDLINE\_LINUX\_DEFAULT 然後 `grub-mkconfig -o /boot/grub/grub.cfg`
 
 #### 套用 microcode
 
@@ -535,7 +535,7 @@ AUR 沒有在管內容有沒有開源，很多都是 binary blobs，風險自負
 
 有一個我維護的 AUR 自動打包系統，自動把一些 AUR 套件打包並放在一個 pacman repo ， repo 網址 https://aurbuild.eglo.ga/ 如果想要加入套件，先確認 PKGBUILD 是好的，可以在他的 dependency 都滿足的情況下用 devtools 打包後聯絡 xdavidwuph@gmail.com 。如果這些看不懂或不知道怎麼加這個 repo 就不該用這個。部份套件的 PKGBUILD 有經過調整加入一些 compile-time 就決定的 features 。只提供自動打包，風險自負，如果新的 PKGBUILD 有問題就不一定是最新，我也不一定有興趣研究別人的 bug
 
-如果有興趣 contribute to PKGBUILDs, 推薦可以自己包個含 `base-devel` 並且有設自己的 AUR 套件 repo 的 container image, 並且使用 container 去確保 dependency 沒有顯著問題
+如果有興趣 contribute to PKGBUILDs，推薦可以自己包個含 `base-devel` 並且有設自己的 AUR 套件 repo 的 container image，並且使用 container 去確保 dependency 沒有顯著問題
 
 ### 安裝中文輸入法 (fcitx)
 
@@ -559,7 +559,7 @@ XMODIFIERS="@im=fcitx"
 
 找到 Chewing (新酷音) 並新增
 
-Wayland 的部份輸入法 [protocol](https://github.com/swaywm/wlroots/blob/master/protocol/input-method-unstable-v2.xml) 已經有 unstable 版本，但還沒有已知的完全實做。目前可以透過 Xwayland 用 toolkit im module (GTK_IM_MODULE, QT_IM_MODULE) 的方式使用 fcitx ，缺點是依賴於 Xwayland ，需要是使用 GTK 或 QT 才能使用，且因為 Wayland 沒有取得畫面全域座標的方法 (這是 by-design，而且在某些特殊模型下全域座標可能沒意義或不存在) ，選字 popup 的位置大多會不正確
+Wayland 的部份輸入法 [protocol](https://github.com/swaywm/wlroots/blob/master/protocol/input-method-unstable-v2.xml) 已經有 unstable 版本，但還沒有已知的完全實做。目前可以透過 Xwayland 用 toolkit im module (GTK\_IM\_MODULE, QT\_IM\_MODULE) 的方式使用 fcitx ，缺點是依賴於 Xwayland ，需要是使用 GTK 或 QT 才能使用，且因為 Wayland 沒有取得畫面全域座標的方法 (這是 by-design，而且在某些特殊模型下全域座標可能沒意義或不存在) ，選字 popup 的位置大多會不正確
 
 GNOME Wayland 因為 gnome-shell 有對 IBus 做選字 popup，IBus 會正常運作。但是是個別整合而不是通用的 protocol
 
