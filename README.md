@@ -17,12 +17,18 @@ Windows 會把 UEFI/BIOS 的時間設做當地時間，但其他系統通常是�
 這些功能可能可以幫你省下狂按按鍵進 UEFI 設定或開機選單的麻煩
 
 * Windows 的 `進階啟動` (reboot 時壓住 shift)
-  * 也可以用來選 boot device 暫時充當開機選單
+
+也可以用來選 boot device 暫時充當開機選單
+
 * GRUB command `fwsetup`
-  * 按 c 進入 command line
-  * 常用可以加成一個 entry
+
+按 c 進入 command line
+
+常用可以加成一個 entry
+
 * systemd-boot `Reboot to firmware`
-  * 以 loader.conf `auto-firmware` 控制，預設是 enabled
+
+以 loader.conf `auto-firmware` 控制，預設是 enabled
 
 注意某些 UEFI/BIOS 會把持續壓住的鍵視為故障而不進設定
 
@@ -139,17 +145,24 @@ cfdisk /dev/sda
 ```
 
 * /dev/sda1: /boot
-  * **空間通常建議 512MB，類型為 EFI System**
-  * (若有其他系統的 EFI 分區可以直接沿用，且不要格式化，格式化你其他系統的 bootloader 就沒了)
-  * 我的系統上 Windows 的 bootloader 再加上 Dell 的一些 recovery system 再加上 grub 和 Arch Linux 的 kernel 和 initramfs 用了快 150MB
-  * 我會最少也弄個 256MB 省麻煩
+
+**空間通常建議 512MB，類型為 EFI System**
+
+(若有其他系統的 EFI 分區可以直接沿用，且不要格式化，格式化你其他系統的 bootloader 就沒了)
+
+我的系統上 Windows 的 bootloader 再加上 Dell 的一些 recovery system 再加上 grub 和 Arch Linux 的 kernel 和 initramfs 用了快 150MB
+
+我會最少也弄個 256MB 省麻煩
 
 * /dev/sda2: Swap
-  * **自訂，類型為 Linux Swap**
-  * swap 分區是用來儲存部份原本應該在 RAM 上的資訊。如果你覺得你的 RAM 大小足夠，可能不需要這個分區，也可以事後使用基於檔案的 swap 。
+
+**自訂，類型為 Linux Swap**
+
+swap 分區是用來儲存部份原本應該在 RAM 上的資訊。如果你覺得你的 RAM 大小足夠，可能不需要這個分區，也可以事後使用基於檔案的 swap
 
 * /dev/sda3: /
-  * **自訂，可以使用全部剩餘空間，類型為 Linux filesystem**
+
+**自訂，可以使用全部剩餘空間，類型為 Linux filesystem**
 
 如果需要調整現有分區的大小，切記要先 resize filesystem (ext 系列是 resize2fs) 再去 resize partition。如果怕出錯，可以用 gparted GUI 懶人工具。Arch Linux live 環境通常會塞不下 gparted ，可以改用 gparted 官方自己的 live system。
 
@@ -282,29 +295,37 @@ passwd
 
 這裡介紹 systemd-boot 和 GRUB
 
-* GRUB
-  * 顏值高，可 theme，功能多，支援執行多種 OS kernel
-  * 相較之下偏大 (x86\_64-efi) EFI binary + modules 約 3.3M
-  * Arch 套件不小 (約 32M when installed)
-  * 實測在 4k 螢幕上輸出微慢
+GRUB:
 
-* systemd-boot
-  * Arch 上就在 systemd package 裡，裝了 systemd 就順便送你
-  * 功能少，只能 load EFI binary
-    * Linux kernel 需要 CONFIG_EFI_STUB 支援以 EFI binary 載入 (Arch `linux` 有開)
-    * entries 要自己寫或生成 unified kernel image
-    * 本文採用自己寫 entries，就不用每次更新 kernel 重新生成 unified image
-  * 輸出直接交給 EFI，不能 font 或用背景圖
-    * HiDPI 上字小或字醜二選一
-    * 但通常跟 UEFI 自己的 boot menu 很搭
-  * 很小，EFI binary 92K
-  * 預設就會自己抓 Windows, OS X 的 bootloader 長出 entries
-  * 預設自己會長出 `Reboot to firmware`
+* 顏值高，可 theme，功能多，支援執行多種 OS kernel
+* 相較之下偏大 (x86\_64-efi) EFI binary + modules 約 3.3M
+* Arch 套件不小 (約 32M when installed)
+* 實測在 4k 螢幕上輸出微慢
+
+systemd-boot:
+
+* Arch 上就在 systemd package 裡，裝了 systemd 就順便送你
+* 功能少，只能 load EFI binary
+
+Linux kernel 需要 CONFIG\_EFI\_STUB 支援以 EFI binary 載入 (Arch `linux` 套件有開)
+
+entries 要自己寫或生成 unified kernel image
+
+* 本文採用自己寫 entries，就不用每次更新 kernel 重新生成 unified image
+* 輸出直接交給 EFI，不能 font 或用背景圖
+
+HiDPI 上字小或字醜二選一
+
+但通常跟 UEFI 自己的 boot menu 很搭
+
+* 很小，EFI binary 92K
+* 預設就會自己抓 Windows, OS X 的 bootloader 長出 entries
+* 預設自己會長出 `Reboot to firmware`
 
 
 如果之後開機載入了其他系統的 bootloader ，先檢查 `/boot/EFI/Boot/Bootx64.efi` 是否與 `/boot/EFI/systemd/systemd-bootx64.efi` 或 `/boot/EFI/grub/grubx64.efi` 相同，注意在 FAT 系列格式下大小寫不拘。不會太舊的 UEFI 實做大多可以手動設定 `EFI/Boot/Bootx64.efi` 以外的路徑可以試試。 `EFI/Boot/Boot<architecture>.efi` 是 UEFI 規範的 fallback 路徑
 
-#### systemd-boot
+* systemd-boot
 
 ```shell
 bootctl install
@@ -312,7 +333,7 @@ bootctl install
 
 注意 `/boot/EFI/Boot/Bootx64.efi` 會被覆寫
 
-##### 設定
+設定:
 
 main config `/boot/loader/loader.conf` 常見 options:
 
@@ -331,7 +352,7 @@ initrd <initramfs path>
 options <kernel cmdline>
 ```
 
-##### 範例
+範例:
 
 main config `/boot/loader/loader.conf`:
 
@@ -359,7 +380,7 @@ initrd /initramfs-linux-fallback.img
 options root=UUID=<root UUID>
 ```
 
-#### GRUB
+* GRUB
 
 ```shell
 pacman -S grub os-prober efibootmgr
@@ -374,7 +395,9 @@ grub-mkconfig -o /boot/grub/grub.cfg
 
 ### 安裝 Wi-Fi 連線工具
 
-#### netctl wifi-menu
+這裡介紹 netctl wifi-menu 和 iwd
+
+* netctl wifi-menu
 
 傳統 Arch 味 wifi-menu
 
@@ -384,7 +407,7 @@ pacman -S wpa_supplicant dialog
 
 dialog 被 netctl 的 wifi-menu 功能需要
 
-#### iwd
+* iwd
 
 大量利用 kernel crypto API 的輕量 wireless daemon，自行編譯 kernel 者注意相關 configuration (如果有缺在 log 會有提示)
 
@@ -407,7 +430,7 @@ station <interface> scan
 station <interface> get-networks
 ```
 
-連 AP:
+連 AP: (802.1x 要寫 config)
 
 ```iwctl
 station <interface> connect <ssid>
@@ -429,7 +452,7 @@ station <interface> connect <ssid>
 
 如果要再進一步關 mitigations，在 kernel cmdline 增加 mitigations=off
 
-#### cmdline 調整
+cmdline 調整:
 
 * systemd-boot
 
@@ -439,7 +462,7 @@ station <interface> connect <ssid>
 
 修改 /etc/default/grub 的 GRUB\_CMDLINE\_LINUX\_DEFAULT 然後 `grub-mkconfig -o /boot/grub/grub.cfg`
 
-#### 套用 microcode
+套用 microcode:
 
 * systemd-boot
 
@@ -499,7 +522,7 @@ reboot
 
 如果要達成混合顯示，參考 [PRIME](https://wiki.archlinux.org/index.php/PRIME)
 
-#### NVIDIA
+* NVIDIA
 
 使用 NVIDIA 提供的 nvidia ，如果偏好開源可以跳過，原本預設會使用完全開源的 nouveau
 
@@ -513,7 +536,7 @@ reboot
 
 需要時可以安裝 nvidia-settings 圖形界面程式來調整設定
 
-#### AMD
+* AMD
 
 參閱 [AMDGPU](https://wiki.archlinux.org/index.php/AMDGPU)
 
