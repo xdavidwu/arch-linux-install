@@ -34,7 +34,7 @@ Windows 會把 UEFI/BIOS 的時間設做當地時間，但其他系統通常是�
 
 ## 安裝
 
-Arch Linux 與其他大多數發行版不同，沒有一個專門的 installer，只有 bootstrap 工具 (pacstrap) 。開機進 Arch Linux 的 ISO 後，會進入到一個有 zsh 的 kernel console，需要手動安裝
+Arch Linux 與其他大多數主流發行版不同，安裝主要依靠 bootstrap 工具 (pacstrap) 安裝套件後手動設定。開機進 Arch Linux 的 ISO 後，會進入到一個有 zsh 的 kernel console，再進行手動安裝
 
 UEFI 需要停用 secure boot
 
@@ -50,11 +50,7 @@ setfont /usr/share/kbd/consolefonts/latarcyrheb-sun32.psfu.gz
 
 ### 驗證開機模式
 
-在 UEFI 模式下，會存在目錄 /sys/firmware/efi ，如果想確保目前是在 UEFI 下，可以用他來確認
-
-```shell
-ls /sys/firmware/efi
-```
+UEFI 模式下，路徑 `/sys/firmware/efi` 會存在，如果想確保目前是在 UEFI 下，可以用他來確認
 
 ### 設定網路連線
 
@@ -137,7 +133,7 @@ lsblk -a
 fdisk -l
 ```
 
-在 linux 中 device nodes 位於 /dev 底下，其中 block devices 位於 /dev 或 /dev/block ，在 Arch 為前者，舉例來說透過運行 lsblk 後，得知固態硬碟名稱為 nvme0n1 ，他的 device node 位置便是 /dev/nvme0n1
+在 Linux 中 device nodes 位於 /dev 底下，其中 block devices 位於 /dev 或 /dev/block ，在 Arch 為前者，舉例來說透過運行 lsblk 後，得知固態硬碟名稱為 nvme0n1 ，他的 device node 位置便是 /dev/nvme0n1
 
 其中常見 block devices 的命名規則如下
 
@@ -157,7 +153,7 @@ cfdisk /dev/sda
 
 * /dev/sda1: /boot
 
-**空間通常建議 512MB，類型為 EFI System**
+空間通常建議 512MB，類型為 EFI System
 
 (若有其他系統的 EFI 分區可以直接沿用，且不要格式化，格式化你其他系統的 bootloader 就沒了)
 
@@ -167,17 +163,17 @@ cfdisk /dev/sda
 
 * /dev/sda2: Swap
 
-**自訂，類型為 Linux Swap**
+自訂，類型為 Linux Swap
 
 swap 分區是用來儲存部份原本應該在 RAM 上的資訊。如果你覺得你的 RAM 大小足夠，可能不需要這個分區，也可以事後使用基於檔案的 swap
 
 * /dev/sda3: /
 
-**自訂，可以使用全部剩餘空間，類型為 Linux filesystem**
+自訂，可以使用全部剩餘空間，類型為 Linux filesystem
 
 如果需要調整現有分區的大小，切記要先 resize filesystem (ext 系列是 resize2fs) 再去 resize partition。如果怕出錯，可以用 gparted GUI 懶人工具。Arch Linux live 環境通常會塞不下 gparted ，可以改用 gparted 官方自己的 live system。
 
-### 格式化磁區
+### 格式化分區
 
 ```shell
 mkfs -t vfat /dev/sda1
@@ -185,7 +181,7 @@ mkswap /dev/sda2
 mkfs -t ext4 /dev/sda3
 ```
 
-### 掛載磁區
+### 掛載分區
 
 ```shell
 mount /dev/sda3 /mnt
@@ -203,11 +199,11 @@ mount /dev/sda1 /mnt/boot
 
 調整 pacman 啟用的鏡像站，提高下載安裝的速度
 
-於 /etc/pacman.d/mirrorlist 把非 Taiwan 的註解或刪掉，把 Taiwan 的視所在位置排序
+於 `/etc/pacman.d/mirrorlist` ，把 Taiwan 的移到前面，視所在位置排序
 
 ### 安裝 base metapackage 和 base-devel group
 
-如果想要更小的系統不寫程式可能不需要 `base-devel`
+如果想要更小的系統不做開發可能不需要 `base-devel`
 
 這裡會自動刷新一次 repo db 然後下載最新的套件
 
@@ -219,7 +215,7 @@ pacstrap /mnt base base-devel
 
 ### 建立 fstab
 
-生成 fstab 文件，其中 -U 代表透過 UUID 來定義，就算 device nodes 的標籤改變了也能順利使用，他定義了各個分區如何掛載於系統
+生成 fstab ，其中 -U 代表透過 UUID 來定義，就算 device nodes 的標籤改變了也能順利使用，他定義了各個分區如何掛載於系統
 
 ```shell
 genfstab -U /mnt >> /mnt/etc/fstab
@@ -227,7 +223,7 @@ genfstab -U /mnt >> /mnt/etc/fstab
 
 ### chroot 至新系統
 
-chroot 是以其他目錄作為系統根目錄執行指令的概念
+chroot 是以其他目錄作為系統根目錄執行指令的概念， arch-chroot 這個 helper 會幫忙 setup 更多東西，讓環境近似於直接開進去的系統
 
 ```shell
 arch-chroot /mnt
@@ -318,7 +314,7 @@ systemd-boot:
 * Arch 上就在 systemd package 裡，裝了 systemd 就順便送你
 * 功能少，只能 load EFI binary
 
-Linux kernel 需要 CONFIG\_EFI\_STUB 支援以 EFI binary 載入 (Arch `linux` 套件有開)
+Linux kernel 需要開 `CONFIG_EFI_STUB` 支援以 EFI binary 載入 (Arch `linux` 套件有開)
 
 entries 要自己寫或生成 unified kernel image
 
@@ -404,9 +400,9 @@ grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=grub
 grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
-### 安裝 Wi-Fi 連線工具
+注意不管是哪種， Arch 官方的 package 在更新時都不會幫你順便更新 `/boot` 。如果想要達到自動更新可以採用 pacman hook ， AUR 上有現成的 `systemd-boot-pacman-hook` 和 `grub-hook`
 
-* iwd
+### 安裝 Wi-Fi 連線工具 (iwd)
 
 大量利用 kernel crypto API 的輕量 wireless daemon，自行編譯 kernel 者注意相關 configuration (如果有缺在 log 會有提示)
 
@@ -426,13 +422,30 @@ pacman -S iwd
 
 如果之後沒辦法連上網路，設定方面參考上面。如果也是使用 dhcpcd ，記得 enable 他的 service
 
+有線可以考慮不裝 dhcpcd ，使用 systemd-networkd 去連，但是會需要寫 config 於 `/etc/systemd/network/*.network`
+
+範例：
+
+```systemd
+[Match]
+Name=<interface name>
+
+[Link]
+RequiredForOnline=no
+
+[Network]
+DHCP=yes
+```
+
+`RequiredForOnline` 定義這個 network 在 systemd 判斷有沒有 online 會不會需要他，筆電可以設成 no ，不然開機過程大多會等 online
+
 ### 安裝 CPU Microcode
 
 安裝 intel-ucode 或 amd-ucode 套件
 
 有些人可能會想跳過省下 Intel 的一堆漏洞的 mitigations 造成的 performance penalty
 
-對於 mitigations 當前的狀況，可以看 /sys/devices/system/cpu/vulnerabilities/
+對於 mitigations 當前的狀況，可以看 `/sys/devices/system/cpu/vulnerabilities/`
 
 如果要再進一步關 mitigations，在 kernel cmdline 增加 mitigations=off
 
@@ -459,6 +472,13 @@ grub-mkconfig 時會自動加上載入 microcode 的參數，安裝完 microcode
 
 ### 建立新使用者
 
+建立新使用者，並加入 wheel 群組
+
+```shell
+useradd -m -G wheel <your-user-name>
+passwd <your-user-name>
+```
+
 安裝 sudo (包含在 base-devel group 裡面)
 
 ```shell
@@ -477,13 +497,6 @@ visudo
 # %wheel ALL=(ALL) ALL
 ```
 
-建立新使用者，並加入 wheel 群組
-
-```shell
-useradd -m -G wheel <your-user-name>
-passwd <your-user-name>
-```
-
 ### 重新啟動進入新系統
 
 ```shell
@@ -494,7 +507,7 @@ reboot
 
 ## 初次進入系統
 
-以下大多可以在 chroot 時就進行，但直接進系統比較會省麻煩，才不會有比如說哪個 kernel module 裝下去 vermagic 不符用不了
+以下大多可以在 chroot 時就進行，但直接進系統比較會省麻煩，才不會有比如說哪個 kernel module 裝下去跟正在跑的 kernel 不符用不了
 
 ### 安裝顯示卡驅動
 
@@ -508,7 +521,7 @@ reboot
 
 * NVIDIA
 
-使用 NVIDIA 提供的 nvidia ，如果偏好開源可以跳過，原本預設會使用完全開源的 nouveau
+使用 NVIDIA 提供的 nvidia ，如果偏好開源可以跳過，原本預設會使用開源的 nouveau
 
 注意 nvidia 沒有實做 GBM 只有實做自家出品的 EGLStreams ，基於 wlroots 的 Wayland compositors 不支援
 
@@ -516,7 +529,7 @@ reboot
 
 含有 kernel module ， nvidia-modprobe 或重新啟動以載入
 
-監控檢查狀況用 nvidia-smi 指令
+監控檢查狀況用 nvidia-smi 指令 (套件 nvidia-utils)
 
 需要時可以安裝 nvidia-settings 圖形界面程式來調整設定
 
@@ -526,23 +539,23 @@ reboot
 
 ### 安裝 GUI
 
-安裝你需要的桌面環境/wm/Wayland compositor。選擇依賴於個人喜好故跳過。如果你不知道我在說什麼就不該裝 Arch Linux
+安裝你需要的桌面環境 / wm / Wayland compositor 。選擇依賴於個人喜好故跳過。如果你不知道我在說什麼就不該裝 Arch Linux
 
 ### 安裝 AUR helper
 
 AUR 是由社群推動的使用者軟體庫，包含了 PKGBUILD 等打包時需要的腳本，可以用 makepkg 打包軟體包，並透過 pacman 安裝。透過 AUR 可以在社群間分享、建構新軟體包，熱門的軟體有機會被收錄進 community 軟體庫
 
-AUR 沒有在管內容有沒有開源，很多都是 binary blobs，風險自負，建議養成 review PKGBUILD 的習慣
+AUR 沒有在管內容有沒有開源，很多都是 binary blobs ，風險自負，建議養成 review PKGBUILD 的習慣
 
-如果想要使用 AUR 上的資源，需要確認有安裝 base metapackage, base-devel group 及 git。然後使用 AUR helper 來打包 AUR 上的內容，或是手動用 makepkg 一一打包
+如果想要使用 AUR 上的資源，需要確認有安裝 base metapackage, base-devel group 及 git 。然後使用 AUR helper 來打包 AUR 上的內容，或是手動用 makepkg 一一打包
 
-如果要手動打包 ，大致上的流程是遞迴找出目標套件和所有他在 AUR 上的 dependencies，從沒有 depend 到 AUR 套件的開始以 `makepkg -si` 打包回去，`-s` 會用 pacman 安裝缺少的 dependencies，`-i` 是在打包完後自動安裝
+如果要手動打包，大致上的流程是遞迴找出目標套件和所有他在 AUR 上的 dependencies ，從沒有 depend 到 AUR 套件的開始以 `makepkg -si` 打包回去，`-s` 會用 pacman 安裝缺少的 dependencies ，`-i` 是在打包完後自動安裝
 
 自行參閱 [Arch User Repository](<https://wiki.archlinux.org/index.php/Arch_User_Repository>) 以及 [AUR helpers](https://wiki.archlinux.org/index.php/AUR_helpers) 頁面
 
-有一個我維護的 AUR 自動打包系統，自動把一些 AUR 套件打包並放在一個 [pacman repo](https://aurbuild.eglo.ga/) ， 如果想要加入套件，先確認 PKGBUILD 是好的，可以在他的 dependency 都滿足的情況下用 devtools 打包後聯絡 xdavidwuph@gmail.com 。如果這些看不懂或不知道怎麼加這個 repo 就不該用這個。部份套件的 PKGBUILD 有經過調整加入一些 compile-time 就決定的 features 。只提供自動打包，風險自負，如果新的 PKGBUILD 有問題就不一定是最新，我也不一定有興趣研究別人的 bug
+有一個我維護的 AUR 自動打包系統，自動把一些 AUR 套件打包並放在一個 [pacman repo](https://aurbuild.eglo.ga/) ， 如果想要加入套件，先確認 PKGBUILD 是好的，可以在他的 dependency 都滿足的情況下用 devtools 打包後聯絡 xdavidwuph@gmail.com 。如果這些看不懂或不會查怎麼加這個 repo 就不該用這個。部份套件的 PKGBUILD 有經過調整加入一些 compile-time 就決定的 features 。只提供自動打包，風險自負，如果新的 PKGBUILD 有問題就不一定是最新，我也不一定有興趣研究別人的 bug 。套件有用 PGP key `F73F137D4573DEFAA097DBF09544CFF6B08A3FD3` 簽名
 
-如果有興趣 contribute to PKGBUILDs，推薦可以自己包個含 `base-devel` 並且有設自己的 AUR 套件 repo 的 container image，並且使用 container 去確保 dependency 沒有顯著問題
+如果有興趣 contribute to PKGBUILDs ，推薦可以自己包個含 `base-devel` 並且有設自己的 AUR 套件 repo 的 container image，並且使用 container 去確保 dependency 沒有顯著問題
 
 ### 安裝中文輸入法 (fcitx)
 
