@@ -76,16 +76,27 @@ ip l set <interface> up
 ip l
 ```
 
-如果是 wifi ，可以利用 netctl 的 wifi-menu
+如果是 wifi ，可以利用 iwd (含內建 DHCP client)
 
-```shell
-wifi-menu
+連線方法: iwctl 進入 interactive command line
+
+掃 AP:
+
+```iwctl
+station <interface> scan
+station <interface> get-networks
 ```
 
-然後不管是有線還是無線，確保有透過 DHCP 拿到 ip
+連 AP: (802.1x 要寫 config, 見 `iwd.network(5)`)
+
+```iwctl
+station <interface> connect <ssid>
+```
+
+如果是有線，確保有透過 DHCP 拿到 ip
 
 ```shell
-ip a <interface>
+ip a show <interface>
 ```
 
 如果沒有，確保有啟動 dhcpcd
@@ -395,18 +406,6 @@ grub-mkconfig -o /boot/grub/grub.cfg
 
 ### 安裝 Wi-Fi 連線工具
 
-這裡介紹 netctl wifi-menu 和 iwd
-
-* netctl wifi-menu
-
-傳統 Arch 味 wifi-menu
-
-```shell
-pacman -S wpa_supplicant dialog
-```
-
-dialog 被 netctl 的 wifi-menu 功能需要
-
 * iwd
 
 大量利用 kernel crypto API 的輕量 wireless daemon，自行編譯 kernel 者注意相關 configuration (如果有缺在 log 會有提示)
@@ -420,21 +419,6 @@ pacman -S iwd
 有 daemon 要先起來，systemd unit iwd.service
 
 預設會自己處理 interface，創成 wlan0 這種 naming，可以在 daemon 加參數避免，enable 的話注意他起來時 interface 有沒有先出現
-
-連線方法: iwctl 進入 interactive command line
-
-掃 AP:
-
-```iwctl
-station <interface> scan
-station <interface> get-networks
-```
-
-連 AP: (802.1x 要寫 config)
-
-```iwctl
-station <interface> connect <ssid>
-```
 
 ### 其餘網路工具
 
