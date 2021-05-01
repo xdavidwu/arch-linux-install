@@ -89,13 +89,13 @@ station <interface> get-networks
 station <interface> connect <ssid>
 ```
 
-如果是有線，確保有透過 DHCP 拿到 ip
+確保有透過 DHCP 拿到 ip
 
 ```shell
 ip a show <interface>
 ```
 
-如果沒有，確保有啟動 dhcpcd
+如果沒有並且是有線，確保有啟動 dhcpcd
 
 ```shell
 systemctl start dhcpcd.service
