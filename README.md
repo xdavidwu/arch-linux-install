@@ -497,6 +497,21 @@ visudo
 # %wheel ALL=(ALL) ALL
 ```
 
+如果你沒有打算裝整個 base-devel ，你可能會對 opendoas 有興趣
+
+OpenBSD 的 doas 以相對簡短許多的 code 提供了 sudo 的大多數功能， OpenDoas 把他移植到其他平台
+
+```shell
+pacman -S opendoas
+echo 'permit persist setenv { LC_ALL } :wheel' > /etc/doas.conf
+```
+
+doas 預設不傳有關語言的環境變數，這裡設定多個 `LC_ALL` 來傳
+
+之後看到 sudo 就用 doas 代替
+
+如果有要使用 makepkg (例如使用 AUR)， makepkg 假設 sudo 存在，如果不在就改用 su 幫你 call pacman 。可以自己加個 sudo 的 link 到 doas 讓他吃
+
 ### 重新啟動進入新系統
 
 ```shell
